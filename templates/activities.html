@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activities - Krishi Sakhi</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="app-title">
+                <span class="material-icons">eco</span> Krishi Sakhi
+            </div>
+            <div class="header-right">
+                <button id="language-toggle" class="icon-button" title="Toggle Language">
+                    <span class="language-text">EN</span>
+                </button>
+                <button id="theme-toggle" class="icon-button" title="Toggle Theme">
+                    <span class="material-icons">light_mode</span>
+                </button>
+                <div class="weather">
+                    <div class="weather-temp">
+                        <span class="material-icons weather-icon">wb_sunny</span>
+                        <span>28°C</span>
+                    </div>
+                    <div class="weather-condition">Clear</div>
+                </div>
+            </div>
+        </header>
+
+        <section class="main-content">
+            <h1 data-en="All Activities" data-ml="എല്ലാ പ്രവർത്തനങ്ങളും">All Activities</h1>
+            <div class="card activities-card">
+                <div class="card-header">
+                    <span class="material-icons card-icon">agriculture</span>
+                    <h2 data-en="Farm Activities Log" data-ml="കാർഷിക പ്രവർത്തന രേഖ">Farm Activities Log</h2>
+                </div>
+                <div id="activities-list" class="activities-list">
+                    <!-- Activities will be loaded here by script.js -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item">
+            <span class="material-icons nav-icon">home</span>
+            <span class="nav-label" data-en="Home" data-ml="ഹോം">Home</span>
+        </a>
+        <a href="/activities" class="nav-item active">
+            <span class="material-icons nav-icon">agriculture</span>
+            <span class="nav-label" data-en="Activities" data-ml="പ്രവർത്തനങ്ങൾ">Activities</span>
+        </a>
+        <a href="/chat" class="nav-item">
+            <span class="material-icons nav-icon">smart_toy</span>
+            <span class="nav-label" data-en="AI Chat" data-ml="എഐ ചാറ്റ്">AI Chat</span>
+        </a>
+        <a href="/schemes" class="nav-item">
+            <span class="material-icons nav-icon">savings</span>
+            <span class="nav-label" data-en="Schemes" data-ml="പദ്ധതികൾ">Schemes</span>
+        </a>
+        <a href="/knowledge" class="nav-item">
+            <span class="material-icons nav-icon">menu_book</span>
+            <span class="nav-label" data-en="Knowledge" data-ml="അറിവ്">Knowledge</span>
+        </a>
+    </nav>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
+</html>

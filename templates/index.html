@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krishi Sakhi</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="top-bar">
+            <div class="app-title">
+                <span class="material-icons">eco</span> Krishi Sakhi
+            </div>
+            <div class="header-right compact-icons">
+                <button class="icon-square" id="notify-btn" title="Notifications">
+                    <span class="material-icons">notifications_none</span>
+                </button>
+                <button class="icon-square" id="theme-toggle" title="Toggle Theme">
+                    <span class="material-icons">light_mode</span>
+                </button>
+                <button class="icon-square" id="language-toggle" title="Toggle Language">
+                    <span class="material-icons">translate</span>
+                </button>
+                <button class="icon-square" id="profile-btn" title="Profile">
+                    <span class="material-icons">account_circle</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="hero" id="dashboard-hero">
+            <div class="hero-icon-wrapper">
+                <div class="hero-icon-glow"></div>
+                <span class="material-icons hero-icon">smart_toy</span>
+            </div>
+            <h2 class="hero-title" data-en="Welcome to Krishi Sakhi AI" data-ml="കൃഷി സഹായി എഐയിലേക്ക് സ്വാഗതം">Welcome to Krishi Sakhi AI</h2>
+            <p class="hero-sub" data-en="I am reviewing your farm’s profile and past activities to provide the best advice. Feel free to ask me anything about your farm!" data-ml="നിങ്ങളുടെ ഫാം പ്രൊഫൈലും പൂർവ്വ പ്രവർത്തനങ്ങളും ഞാൻ വിലയിരുത്തുന്നുണ്ട്. മികച്ച ഉപദേശം ലഭിക്കാൻ എന്തും ചോദിക്കാം!">I am reviewing your farm’s profile and past activities to provide the best advice. Feel free to ask me anything about your farm!</p>
+            <div class="quick-actions">
+                <button class="qa-btn" data-action="weather" data-en="Weather Forecast" data-ml="കാലാവസ്ഥ പ്രവചനം">
+                    <span class="material-icons">sunny</span>
+                    <span class="qa-label">Weather Forecast</span>
+                </button>
+                <button class="qa-btn" data-action="paddy" data-en="Paddy Disease" data-ml="നെല്ല് രോഗങ്ങൾ">
+                    <span class="material-icons">pest_control</span>
+                    <span class="qa-label">Paddy Disease</span>
+                </button>
+                <button class="qa-btn" data-action="organic" data-en="Organic Fertilizers" data-ml="ഓർഗാനിക് വളങ്ങൾ">
+                    <span class="material-icons">compost</span>
+                    <span class="qa-label">Organic Fertilizers</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="inline-cards-row">
+            <div class="mini-card weather-mini" id="inline-weather">
+                <div class="mini-weather-top">
+                    <span class="material-icons">wb_sunny</span>
+                    <span class="mini-temp">28°C</span>
+                </div>
+                <div class="mini-condition" data-en="Clear" data-ml="വെയിൽ">Clear</div>
+            </div>
+            <div class="mini-card" id="soil-health">
+                <span class="material-icons">science</span>
+                <div class="mini-label" data-en="Soil" data-ml="മണ്ണ്">Soil</div>
+            </div>
+            <div class="mini-card" id="market-prices">
+                <span class="material-icons">show_chart</span>
+                <div class="mini-label" data-en="Markets" data-ml="വിപണി">Markets</div>
+            </div>
+        </div>
+
+        <div class="card advisory-card">
+            <div class="card-header">
+                <span class="material-icons card-icon">psychology</span>
+                <h2 data-en="Today's Advisory" data-ml="ഇന്നത്തെ ഉപദേശം">Today's Advisory</h2>
+            </div>
+            <div class="advisory-content">
+                <div>
+                    <p data-en="Generate a personalized advisory for your farm." data-ml="നിങ്ങളുടെ കൃഷിക്കായി വ്യക്തിഗതമാക്കിയ ഉപദേശം സൃഷ്ടിക്കുക.">Generate a personalized advisory for your farm.</p>
+                </div>
+                <a href="/advisory" class="btn modern-btn">
+                    <span class="material-icons btn-icon">auto_awesome</span>
+                    <span data-en="Get Advisory" data-ml="ഉപദേശം നേടുക">Get Advisory</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="card activities-card">
+            <div class="card-header">
+                <span class="material-icons card-icon">history</span>
+                <h2 data-en="Recent Activities" data-ml="സമീപകാല പ്രവർത്തനങ്ങൾ">Recent Activities</h2>
+            </div>
+            <div id="activities-list" class="activities-list">
+                <!-- Activities will be loaded here by script.js -->
+            </div>
+            <a href="/activities" class="view-all-btn">
+                <span data-en="View All Activities" data-ml="എല്ലാ പ്രവർത്തനങ്ങളും കാണുക">View All Activities</span>
+                <span class="material-icons">arrow_forward</span>
+            </a>
+        </div>
+
+        <div class="card schemes-card">
+            <div class="card-header">
+                <span class="material-icons card-icon">account_balance</span>
+                <h2 data-en="Government Schemes" data-ml="സർക്കാർ പദ്ധതികൾ">Government Schemes</h2>
+            </div>
+            <div class="schemes-content">
+                <p data-en="Find relevant government schemes and subsidies." data-ml="പ്രസക്തമായ സർക്കാർ പദ്ധതികളും സബ്‌സിഡികളും കണ്ടെത്തുക.">Find relevant government schemes and subsidies.</p>
+            </div>
+            <a href="/schemes" class="view-all-btn">
+                <span data-en="View All Schemes" data-ml="എല്ലാ പദ്ധതികളും കാണുക">View All Schemes</span>
+                <span class="material-icons">arrow_forward</span>
+            </a>
+        </div>
+
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item active">
+            <span class="material-icons nav-icon">home</span>
+            <span class="nav-label" data-en="Home" data-ml="ഹോം">Home</span>
+        </a>
+        <a href="/activities" class="nav-item">
+            <span class="material-icons nav-icon">agriculture</span>
+            <span class="nav-label" data-en="Activities" data-ml="പ്രവർത്തനങ്ങൾ">Activities</span>
+        </a>
+        <a href="/chat" class="nav-item">
+            <span class="material-icons nav-icon">smart_toy</span>
+            <span class="nav-label" data-en="AI Chat" data-ml="എഐ ചാറ്റ്">AI Chat</span>
+        </a>
+        <a href="/schemes" class="nav-item">
+            <span class="material-icons nav-icon">savings</span>
+            <span class="nav-label" data-en="Schemes" data-ml="പദ്ധതികൾ">Schemes</span>
+        </a>
+        <a href="/knowledge" class="nav-item">
+            <span class="material-icons nav-icon">menu_book</span>
+            <span class="nav-label" data-en="Knowledge" data-ml="അറിവ്">Knowledge</span>
+        </a>
+    </nav>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
