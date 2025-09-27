@@ -1,6 +1,6 @@
 import React from 'react'
-import Header from './Header'
-import BottomNav from './BottomNav'
+import Header from './Header.tsx'
+import BottomNav from './BottomNav.tsx'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -8,9 +8,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
       <Header />
-      <main className="flex-1 px-4 py-6 pb-20 max-w-4xl mx-auto w-full">
+      <main className="flex-1 pb-20 max-w-4xl mx-auto w-full">
         {children}
       </main>
       <BottomNav />

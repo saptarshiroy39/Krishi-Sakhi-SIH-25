@@ -96,9 +96,28 @@ npm run dev
 ```
 
 #### 4. Access the Application
-- **Frontend Development**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **Legacy Templates**: http://localhost:5000/legacy
+- **Frontend Development**: Check your terminal for the dev server URL (typically port 3000)
+- **Backend API**: Check your environment settings (default port 5000)
+- **Production**: Configure your production URLs in environment variables
+
+#### 5. Environment Configuration
+Create a `.env` file in the root directory with your API keys and configuration:
+
+```bash
+# Required API Keys
+GEMINI_API_KEY_1=your_gemini_api_key
+GEMINI_API_KEY_2=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+OPENWEATHER_API_KEY=your_openweather_api_key
+
+# Database (Supabase or local PostgreSQL)
+DATABASE_URL=postgresql://username:password@host:port/database
+
+# App Configuration
+SECRET_KEY=your_secret_key
+PORT=5000
+ALLOWED_ORIGINS=*
+```
 
 ## 🎨 Design System
 
@@ -148,10 +167,54 @@ npm run lint         # Run ESLint
 
 ### Backend Development
 ```bash
-python main.py       # Start Flask development server
-flask db migrate     # Create database migrations
-flask db upgrade     # Apply database migrations
+python main.py                       # Start Flask development server
+
+# Database Setup (PostgreSQL recommended)
+python init_db.py                    # Initialize database with sample data
+python db_manager.py check          # Check database connection
+python db_manager.py stats          # Show database statistics
+
+# Migration commands (optional)
+python db_manager.py init           # Initialize migrations
+python db_manager.py migrate        # Create migration
+python db_manager.py upgrade        # Apply migrations
 ```
+
+### Database Configuration
+
+**PostgreSQL (Production Database):**
+- ✅ Currently using Supabase PostgreSQL
+- High performance and scalability
+- Advanced features (JSON support, full-text search, etc.)
+- Cloud-hosted with automatic backups
+
+**SQLite (Development Fallback):**
+- Automatically used if PostgreSQL is not configured
+- Good for local development and testing
+- No additional setup required
+
+### Quick Database Setup
+
+**Option 1: Use existing Supabase (Recommended)**
+```bash
+# Already configured in .env file
+DATABASE_URL=postgresql://postgres:password@your-supabase-url:5432/postgres
+```
+
+**Option 2: Local PostgreSQL**
+```bash
+# Install PostgreSQL locally, then:
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=krishi_sakhi
+DB_USER=your_username
+DB_PASSWORD=your_password
+```
+
+**Option 3: Quick Cloud Setup**
+- [Railway.app](https://railway.app/) - Free PostgreSQL
+- [Supabase](https://supabase.com/) - Free PostgreSQL + more features
+- [Heroku Postgres](https://elements.heroku.com/addons/heroku-postgresql) - Free tier available
 
 ### Project Structure
 ```
@@ -168,8 +231,9 @@ Krishi-Sakhi-SIH-25/
 ├── blueprints/             # Flask blueprints (API modules)
 ├── templates/              # Legacy Jinja2 templates
 ├── static/                 # Legacy static files
-├── instance/               # SQLite database
-├── models.py               # Database models
+├── models.py               # Enhanced database models (PostgreSQL optimized)
+├── init_db.py              # Database initialization script
+├── db_manager.py           # Database management utilities
 ├── main.py                 # Flask application entry point
 └── requirements.txt        # Python dependencies
 ```

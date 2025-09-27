@@ -1,210 +1,474 @@
-import React from 'react'
-import { Sparkles, Cloud, BarChart3, Leaf, TrendingUp, Calendar } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { 
+  Sparkles, CloudRain, Calendar, Building2, BookOpen,
+  RefreshCw, Thermometer, Droplets, Wind, MapPin, Zap, ChevronRight, User, Wheat, Cloud, TrendingUp
+} from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Link } from 'react-router-dom'
+import { API_ENDPOINTS, apiCall } from '../config/api'
+
+
+
+
+
+interface WeatherData {
+  temperature: number;
+  description: string;
+  humidity: number;
+  wind_speed: number;
+  icon: string;
+  feels_like: number;
+  location: string;
+}
+
+interface DashboardStats {
+  total_crops: number;
+  active_tasks: number;
+  upcoming_activities: number;
+  weather_alerts: number;
+  recent_activities_count: number;
+}
+
+interface DashboardData {
+  weather: WeatherData | null;
+  advisory: string;
+  stats: DashboardStats;
+  last_updated: string;
+}
 
 const Home: React.FC = () => {
   const { t } = useLanguage()
 
-  const quickActions = [
-    {
-      icon: Cloud,
-      label: { en: 'Weather Forecast', ml: 'കാലാവസ്ഥ പ്രവചനം' },
-      action: 'weather'
-    },
-    {
-      icon: Leaf,
-      label: { en: 'Paddy Disease', ml: 'നെല്ല് രോഗങ്ങൾ' },
-      action: 'paddy'
-    },
-    {
-      icon: TrendingUp,
-      label: { en: 'Organic Fertilizers', ml: 'ഓർഗാനിക് വളങ്ങൾ' },
-      action: 'organic'
-    }
-  ]
+  // State management
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [location, setLocation] = useState('Kochi')
+  const [userName, setUserName] = useState('Ramesh')
+  const [pendingActivities, setPendingActivities] = useState(0)
+  const [totalFarms, setTotalFarms] = useState(0)
+  const [isGeneratingAdvisory, setIsGeneratingAdvisory] = useState(false)
+  const [isGeneratingStats, setIsGeneratingStats] = useState(false)
 
-  const recentActivities = [
-    {
-      name: { en: 'Sowing', ml: 'വിത്ത് വിതയൽ' },
-      date: '15/07/2024',
-      crop: { en: 'Rice', ml: 'നെല്ല്' },
-      status: 'completed'
-    },
-    {
-      name: { en: 'Watering', ml: 'നീർ വിളകൽ' },
-      date: '16/07/2024',
-      crop: { en: 'Wheat', ml: 'ഗോതമ്പ്' },
-      status: 'completed'
-    },
-    {
-      name: { en: 'Pest Control', ml: 'കീട നിയന്ത്രണം' },
-      date: '18/07/2024',
-      crop: { en: 'Rice', ml: 'നെല്ല്' },
-      status: 'pending'
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      console.log('Fetching dashboard data for location:', location)
+      const data = await apiCall(API_ENDPOINTS.HOME_DASHBOARD(location))
+      console.log('Dashboard data received:', data)
+      
+      if (data.success) {
+        console.log('Setting dashboard data with weather:', data.data.weather)
+        setDashboardData(data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
     }
-  ]
+  }
+
+  // Fetch activities data
+  const fetchActivitiesData = async () => {
+    try {
+      const data = await apiCall(API_ENDPOINTS.ACTIVITIES)
+      if (data.success) {
+        const pending = data.data.filter((activity: any) => activity.status === 'pending').length
+        setPendingActivities(pending)
+      }
+    } catch (error) {
+      console.error('Error fetching activities data:', error)
+      setPendingActivities(0)
+    }
+  }
+
+  // Fetch profile data (for user name, location, and farms count)
+  const fetchProfileData = async () => {
+    try {
+      const data = await apiCall(API_ENDPOINTS.PROFILE_BY_ID(1))
+      if (data.success) {
+        // Update user name
+        if (data.data?.name) {
+          setUserName(data.data.name)
+        }
+        
+        // Update location
+        if (data.data?.location || data.data?.city) {
+          setLocation(data.data.location || data.data.city)
+        }
+        
+        // Update farms count
+        if (data.data?.farms) {
+          setTotalFarms(data.data.farms.length)
+        } else if (data.farms) {
+          setTotalFarms(data.farms.length)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error)
+      setTotalFarms(0)
+    }
+  }
+
+
+
+  // Generate advisory
+  const generateAdvisory = async () => {
+    setIsGeneratingAdvisory(true)
+    try {
+      await fetchDashboardData()
+    } catch (error) {
+      console.error('Error generating advisory:', error)
+    } finally {
+      setIsGeneratingAdvisory(false)
+    }
+  }
+
+  // Generate statistics
+  const generateStatistics = async () => {
+    setIsGeneratingStats(true)
+    try {
+      await fetchDashboardData()
+    } catch (error) {
+      console.error('Error generating statistics:', error)
+    } finally {
+      setIsGeneratingStats(false)
+    }
+  }
+
+
+
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      // First fetch profile data (which includes location)
+      await fetchProfileData()
+      // Then fetch other data
+      await Promise.all([
+        fetchDashboardData(),
+        fetchActivitiesData()
+      ])
+      setLoading(false)
+    }
+    
+    loadData()
+  }, [])
+
+  // Refresh dashboard data when location changes
+  useEffect(() => {
+    if (location !== 'Kochi') { // Only refetch if location actually changed
+      fetchDashboardData()
+    }
+  }, [location])
+
+
+
+
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
+          <p className="text-gray-600 dark:text-gray-400">
+            {t('loadingDashboard', { en: 'Loading dashboard...', ml: 'ഡാഷ്ബോർഡ് ലോഡ് ചെയ്യുന്നു...' })}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Hero Section */}
-      <div className="text-center py-8">
-        <div className="relative inline-block mb-4">
-          <div className="absolute inset-0 bg-primary-500 rounded-full animate-pulse-glow opacity-30"></div>
-          <div className="relative bg-primary-500 p-6 rounded-full">
-            <Sparkles className="w-12 h-12 text-white" />
-          </div>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {t('heroTitle', { en: 'Welcome to Krishi Sakhi AI', ml: 'കൃഷി സഹായി എഐയിലേക്ക് സ്വാഗതം' })}
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
-          {t('heroSubtitle', { 
-            en: 'I am reviewing your farm\'s profile and past activities to provide the best advice. Feel free to ask me anything about your farm!',
-            ml: 'നിങ്ങളുടെ ഫാം പ്രൊഫൈലും പൂർവ്വ പ്രവർത്തനങ്ങളും ഞാൻ വിലയിരുത്തുന്നുണ്ട്. മികച്ച ഉപദേശം ലഭിക്കാൻ എന്തും ചോദിക്കാം!'
-          })}
-        </p>
-        
-        {/* Quick Actions */}
-        <div className="flex justify-center space-x-4 mb-8">
-          {quickActions.map((action, index) => {
-            const Icon = action.icon
-            return (
-              <button
-                key={index}
-                className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 border border-gray-200 dark:border-gray-700"
-              >
-                <Icon className="w-6 h-6 text-primary-500 mb-2" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t(`quickAction.${action.action}`, action.label)}
+    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-20">
+      <div className="px-4 py-6 space-y-6 max-w-md mx-auto">
+        {/* Header */}
+        <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card">
+          <div className="flex flex-col space-y-3">
+            <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-text-primary">
+              {t('welcome', { en: `Welcome, ${userName}`, ml: `സ്വാഗതം, ${userName}` })}
+            </h1>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <MapPin className="w-4 h-4 text-gray-500 mr-2" />
+                <span className="text-gray-600 dark:text-text-secondary text-sm">
+                  {location}
                 </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Mini Cards Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card py-4">
-          <div className="flex items-center justify-center mb-2">
-            <Cloud className="w-6 h-6 text-primary-500" />
-          </div>
-          <div className="text-center">
-            <div className="font-semibold text-gray-900 dark:text-white">28°C</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {t('weather', { en: 'Clear', ml: 'വെയിൽ' })}
+              </div>
+              <div className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center">
+                <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse mr-2"></span>
+                <span className="text-primary-600 dark:text-primary-400 text-xs font-medium">Live</span>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="card py-4">
-          <div className="flex items-center justify-center mb-2">
-            <Leaf className="w-6 h-6 text-primary-500" />
-          </div>
-          <div className="text-center">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {t('soil', { en: 'Soil', ml: 'മണ്ണ്' })}
-            </div>
-          </div>
-        </div>
-        
-        <div className="card py-4">
-          <div className="flex items-center justify-center mb-2">
-            <BarChart3 className="w-6 h-6 text-primary-500" />
-          </div>
-          <div className="text-center">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {t('markets', { en: 'Markets', ml: 'വിപണി' })}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Today's Advisory */}
-      <div className="card">
-        <div className="flex items-center mb-4">
-          <Sparkles className="w-6 h-6 text-primary-500 mr-3" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {t('todayAdvisory', { en: 'Today\'s Advisory', ml: 'ഇന്നത്തെ ഉപദേശം' })}
-          </h2>
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          {t('advisoryDesc', { 
-            en: 'Generate a personalized advisory for your farm.',
-            ml: 'നിങ്ങളുടെ കൃഷിക്കായി വ്യക്തിഗതമാക്കിയ ഉപദേശം സൃഷ്ടിക്കുക.'
-          })}
-        </p>
-        <button className="btn-primary">
-          <Sparkles className="w-4 h-4 mr-2" />
-          {t('getAdvisory', { en: 'Get Advisory', ml: 'ഉപദേശം നേടുക' })}
-        </button>
-      </div>
 
-      {/* Recent Activities */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Calendar className="w-6 h-6 text-primary-500 mr-3" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {t('recentActivities', { en: 'Recent Activities', ml: 'സമീപകാല പ്രവർത്തനങ്ങൾ' })}
+
+        {/* Weather Widget - Full Width */}
+        <Link
+          to="/knowledge#weather-forecast"
+          className="bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 p-6 rounded-2xl shadow-card hover:shadow-elevated transition-all duration-400 hover:-translate-y-0.5 text-left border border-blue-200 dark:border-blue-800 block"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+              <Cloud className="w-6 h-6 text-blue-500 dark:text-blue-400" />
+              {t('weather', { en: 'Weather', ml: 'കാലാവസ്ഥ' })}
             </h2>
+            <ChevronRight className="w-5 h-5 text-blue-500 dark:text-blue-400" />
           </div>
-          <Link 
+          
+          {dashboardData?.weather ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
+                <Thermometer className="w-8 h-8 text-red-500 dark:text-red-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{dashboardData.weather.temperature}°C</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Temperature</p>
+              </div>
+              
+              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
+                <Droplets className="w-8 h-8 text-blue-500 dark:text-blue-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{dashboardData.weather.humidity}%</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Humidity</p>
+              </div>
+              
+              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
+                <Wind className="w-8 h-8 text-green-500 dark:text-green-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{dashboardData.weather.wind_speed} m/s</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">Wind Speed</p>
+              </div>
+              
+              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
+                <img 
+                  src={`https://openweathermap.org/img/wn/${dashboardData.weather.icon}@2x.png`}
+                  alt="Weather"
+                  className="w-8 h-8 mx-auto mb-2"
+                />
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 capitalize">{dashboardData.weather.description}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Condition</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Cloud className="w-12 h-12 text-blue-400 dark:text-blue-300 mx-auto mb-2" />
+              <p className="text-blue-600 dark:text-blue-300">Loading weather data...</p>
+            </div>
+          )}
+        </Link>
+
+        {/* Activities and Farms Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Activities Card */}
+          <Link
             to="/activities"
-            className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline"
+            className="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl shadow-card hover:shadow-elevated transition-all duration-400 hover:-translate-y-0.5"
           >
-            {t('viewAll', { en: 'View All', ml: 'എല്ലാം കാണുക' })}
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-3">
+              <User className="w-5 h-5 text-green-600 dark:text-green-400" strokeWidth={2} />
+            </div>
+            <h3 className="font-medium text-gray-900 dark:text-text-primary text-sm mb-1">
+              {t('activities', { en: 'Activities', ml: 'പ്രവർത്തനങ്ങൾ' })}
+            </h3>
+            <p className="text-gray-600 dark:text-text-secondary text-xs mb-2">
+              {t('manageFarmActivities', { en: 'Manage farm activities', ml: 'കൃഷി പ്രവർത്തനങ്ങൾ നിയന്ത്രിക്കുക' })}
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                {pendingActivities}
+              </span>
+              <span className="text-xs text-green-600 dark:text-green-400">
+                {t('pending', { en: 'Pending', ml: 'കാത്തിരിക്കുന്ന' })}
+              </span>
+            </div>
+          </Link>
+
+          {/* Farms Card */}
+          <Link
+            to="/profile"
+            className="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl shadow-card hover:shadow-elevated transition-all duration-400 hover:-translate-y-0.5"
+          >
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-3">
+              <Wheat className="w-5 h-5 text-amber-600 dark:text-amber-400" strokeWidth={2} />
+            </div>
+            <h3 className="font-medium text-gray-900 dark:text-text-primary text-sm mb-1">
+              {t('farms', { en: 'Farms', ml: 'കൃഷിയിടങ്ങൾ' })}
+            </h3>
+            <p className="text-gray-600 dark:text-text-secondary text-xs mb-2">
+              {t('viewFarmDetails', { en: 'View farm details', ml: 'കൃഷി വിവരങ്ങൾ കാണുക' })}
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                {totalFarms}
+              </span>
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                {t('total', { en: 'Total', ml: 'ആകെ' })}
+              </span>
+            </div>
           </Link>
         </div>
-        <div className="space-y-3">
-          {recentActivities.map((activity, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {t(`activity.${activity.name.en.toLowerCase()}`, activity.name)}
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {t(`crop.${activity.crop.en.toLowerCase()}`, activity.crop)} • {activity.date}
+
+        {/* AI-Powered Advisory Card */}
+        <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-dark/60 dark:to-surface-dark/50 rounded-2xl p-6 shadow-card border border-primary-200 dark:border-primary-900">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-primary-400 rounded-xl flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" strokeWidth={2} />
+              </div>
+              <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
+                {t('aiAdvisory', { en: "AI Farming Advisory", ml: 'AI കൃഷി ഉപദേശം' })}
+              </h2>
+            </div>
+            <button
+              onClick={generateAdvisory}
+              disabled={isGeneratingAdvisory}
+              className="px-4 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 dark:disabled:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+            >
+              {isGeneratingAdvisory ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {t('generating', { en: 'Generating...', ml: 'സൃഷ്ടിക്കുന്നു...' })}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  {t('generate', { en: 'Generate', ml: 'സൃഷ്ടിക്കുക' })}
+                </>
+              )}
+            </button>
+          </div>
+          
+          {dashboardData?.advisory ? (
+            <div className="bg-white/80 dark:bg-background-dark/50 backdrop-blur-sm rounded-xl p-4 border border-primary-100 dark:border-primary-900">
+              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
+                <div className="whitespace-pre-line text-sm leading-relaxed">
+                  {dashboardData.advisory}
                 </div>
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                activity.status === 'completed' 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-              }`}>
-                {t(`status.${activity.status}`, { 
-                  en: activity.status === 'completed' ? 'Completed' : 'Pending',
-                  ml: activity.status === 'completed' ? 'പൂർത്തിയായി' : 'തീർപ്പാക്കാൻ ബാക്കി'
-                })}
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-primary-100 dark:border-primary-800">
+                <div className="flex items-center text-xs text-primary-600 dark:text-primary-400">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  <span>{t('poweredByAI', { en: 'Powered by AI', ml: 'AI പവർഡ്' })}</span>
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(dashboardData.last_updated).toLocaleTimeString()}
+                </span>
               </div>
             </div>
-          ))}
+          ) : (
+            <div className="bg-white/80 dark:bg-background-dark/50 backdrop-blur-sm rounded-xl p-4 text-center border border-primary-100 dark:border-primary-900">
+              <Zap className="w-12 h-12 text-primary-400 mx-auto mb-3" />
+              <p className="text-primary-600 dark:text-primary-400 font-medium">
+                {t('clickToGenerate', { en: 'Click Generate to get AI farming advisory', ml: 'AI കൃഷി ഉപദേശം ലഭിക്കാൻ ജനറേറ്റ് ക്ലിക്ക് ചെയ്യൂ' })}
+              </p>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Government Schemes */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <BarChart3 className="w-6 h-6 text-primary-500 mr-3" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {t('govSchemes', { en: 'Government Schemes', ml: 'സർക്കാർ പദ്ധതികൾ' })}
-            </h2>
+
+
+        {/* Farm Statistics */}
+        <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
+                {t('farmStats', { en: 'Farm Statistics', ml: 'ഫാം സ്ഥിതിവിവരക്കണക്കുകൾ' })}
+              </h2>
+            </div>
+            <button
+              onClick={generateStatistics}
+              disabled={isGeneratingStats}
+              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 dark:disabled:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+            >
+              {isGeneratingStats ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {t('generating', { en: 'Generating...', ml: 'സൃഷ്ടിക്കുന്നു...' })}
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-4 h-4" />
+                  {t('generate', { en: 'Generate', ml: 'സൃഷ്ടിക്കുക' })}
+                </>
+              )}
+            </button>
           </div>
-          <Link 
-            to="/schemes"
-            className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline"
-          >
-            {t('viewAll', { en: 'View All', ml: 'എല്ലാം കാണുക' })}
-          </Link>
+
+          {dashboardData?.stats ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                      {dashboardData.stats.total_crops}
+                    </p>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                      {t('totalCrops', { en: 'Total Crops', ml: 'മൊത്തം വിളകൾ' })}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                      {dashboardData.stats.active_tasks}
+                    </p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      {t('activeTasks', { en: 'Active Tasks', ml: 'സജീവ ജോലികൾ' })}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+                      {dashboardData.stats.upcoming_activities}
+                    </p>
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                      {t('upcomingActivities', { en: 'Upcoming', ml: 'വരാനിരിക്കുന്നവ' })}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-red-900 dark:text-red-100">
+                      {dashboardData.stats.weather_alerts}
+                    </p>
+                    <p className="text-sm text-red-700 dark:text-red-300">
+                      {t('weatherAlerts', { en: 'Weather Alerts', ml: 'കാലാവസ്ഥാ മുന്നറിയിപ്പുകൾ' })}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                    <CloudRain className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <TrendingUp className="w-12 h-12 text-emerald-400 dark:text-emerald-300 mx-auto mb-3" />
+              <p className="text-emerald-600 dark:text-emerald-400 font-medium">
+                {t('clickToGenerateStats', { en: 'Click Generate to view farm statistics', ml: 'ഫാം സ്ഥിതിവിവരക്കണക്കുകൾ കാണാൻ ജനറേറ്റ് ക്ലിക്ക് ചെയ്യൂ' })}
+              </p>
+            </div>
+          )}
         </div>
-        <p className="text-gray-600 dark:text-gray-400">
-          {t('schemesDesc', { 
-            en: 'Find relevant government schemes and subsidies.',
-            ml: 'പ്രസക്തമായ സർക്കാർ പദ്ധതികളും സബ്‌സിഡികളും കണ്ടെത്തുക.'
-          })}
-        </p>
+
       </div>
     </div>
   )

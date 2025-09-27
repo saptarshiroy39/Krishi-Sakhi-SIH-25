@@ -1,12 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { ThemeProvider } from './contexts/ThemeContext'
-import { LanguageProvider } from './contexts/LanguageContext'
-import Layout from './components/Layout'
-import Home from './pages/Home'
-import Activities from './pages/Activities'
-import Chat from './pages/Chat'
-import Schemes from './pages/Schemes'
-import Knowledge from './pages/Knowledge'
+import { ThemeProvider } from './contexts/ThemeContext.tsx'
+import { LanguageProvider } from './contexts/LanguageContext.tsx'
+import Layout from './components/Layout.tsx'
+import Home from './pages/Home.tsx'
+import Activities from './pages/Activities.tsx'
+import Chat from './pages/Chat.tsx'
+import Schemes from './pages/Schemes.tsx'
+import Knowledge from './pages/Knowledge.tsx'
+import Profile from './pages/Profile.tsx'
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
               <Route path="/chat" element={<Chat />} />
               <Route path="/schemes" element={<Schemes />} />
               <Route path="/knowledge" element={<Knowledge />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
           </Layout>
         </Router>
