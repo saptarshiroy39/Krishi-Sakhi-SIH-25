@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Activity, CreditCard, Bot, Brain } from 'lucide-react'
+import { Home, Activity, FileText, Bot, Brain } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const BottomNav: React.FC = () => {
@@ -20,12 +20,12 @@ const BottomNav: React.FC = () => {
       icon: Bot
     },
     {
-      path: '/schemes',
-      icon: CreditCard
-    },
-    {
       path: '/knowledge',
       icon: Brain
+    },
+    {
+      path: '/schemes',
+      icon: FileText
     }
   ]
 

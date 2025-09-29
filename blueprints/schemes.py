@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import google.generativeai as genai
 from dotenv import load_dotenv
 from flask import Blueprint, jsonify, request
+from groq import Groq
 
 load_dotenv()
 
@@ -13,6 +14,14 @@ schemes_bp = Blueprint("schemes", __name__)
 # Configure Gemini API
 GEMINI_API_KEY_2 = os.getenv("GEMINI_API_KEY_2")
 genai.configure(api_key=GEMINI_API_KEY_2)
+
+# Initialize GROQ client for lightweight tasks
+def get_groq_client():
+    """Get GROQ client for lightweight scheme analysis"""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ API key not configured")
+    return Groq(api_key=api_key)
 
 # Government schemes data
 SCHEMES_DATA = [
@@ -220,7 +229,7 @@ def generate_default_recommendations():
         }}
         """
 
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
 
         try:
@@ -417,7 +426,7 @@ def recommend_schemes():
         """
 
         # Generate response using Gemini
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
 
         try:
@@ -510,7 +519,7 @@ def check_eligibility():
         }}
         """
 
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
 
         try:
@@ -589,3 +598,66 @@ def search_schemes():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@schemes_bp.route("/schemes/quick-match", methods=["POST"])
+def quick_scheme_match():
+    """Use GROQ for quick scheme matching based on farmer needs"""
+    try:
+        data = request.get_json()
+        farmer_query = data.get("query", "")
+        
+        if not farmer_query:
+            return jsonify({"success": False, "error": "Query is required"}), 400
+
+        # Use GROQ for fast scheme matching
+        client = get_groq_client()
+        
+        # Create a simplified scheme list for GROQ
+        scheme_summary = []
+        for scheme in SCHEMES_DATA:
+            scheme_summary.append(f"ID:{scheme['id']} - {scheme['name']['en']} ({scheme['category']})")
+        
+        schemes_text = "; ".join(scheme_summary)
+        
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": f"You are a quick scheme matcher. Given farmer needs, return only the top 2 most relevant scheme IDs from this list: {schemes_text}. Respond with just comma-separated IDs, e.g., '1,3'"
+                },
+                {"role": "user", "content": f"Farmer needs: {farmer_query}"}
+            ],
+            max_tokens=20,
+            temperature=0.3
+        )
+
+        # Parse the response to get scheme IDs
+        try:
+            suggested_ids = [int(id.strip()) for id in response.choices[0].message.content.strip().split(',')]
+            matched_schemes = [scheme for scheme in SCHEMES_DATA if scheme['id'] in suggested_ids]
+        except:
+            # Fallback to first 2 schemes if parsing fails
+            matched_schemes = SCHEMES_DATA[:2]
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "matched_schemes": matched_schemes,
+                "query": farmer_query,
+                "powered_by": "GROQ"
+            }
+        })
+
+    except Exception as e:
+        print(f"GROQ scheme matching error: {e}")
+        # Fallback to basic matching
+        return jsonify({
+            "success": True,
+            "data": {
+                "matched_schemes": SCHEMES_DATA[:2],
+                "query": farmer_query,
+                "powered_by": "FALLBACK"
+            }
+        })

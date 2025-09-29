@@ -9,12 +9,13 @@ const Header: React.FC = () => {
   const { toggleLanguage, t } = useLanguage()
 
   return (
-    <header className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm" 
+    <header className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm" 
       style={{ 
-        paddingTop: 'env(safe-area-inset-top, 0px)' // Add padding for mobile notch/status bar
+        paddingTop: 'env(safe-area-inset-top, 0px)', // Add padding for mobile notch/status bar
+        width: '100%'
       }}>
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="px-4 sm:px-6 lg:px-8 w-full">
+        <div className="flex justify-between items-center h-16 w-full">
           {/* Logo Section */}
           <div className="flex items-center space-x-3">
             <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">

@@ -50,7 +50,7 @@ def get_advisory(farmer_id):
             return jsonify({"error": "Gemini API key not configured"}), 500
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
 
         return jsonify({"advisory": response.text})

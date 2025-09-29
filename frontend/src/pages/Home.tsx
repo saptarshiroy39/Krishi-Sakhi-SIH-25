@@ -83,26 +83,29 @@ const Home: React.FC = () => {
   const fetchProfileData = async () => {
     try {
       const data = await apiCall(API_ENDPOINTS.PROFILE_BY_ID(1))
+      console.log('Profile API response:', data)
+      
       if (data.success) {
         // Update user name
-        if (data.data?.name) {
-          setUserName(data.data.name)
+        if (data.name) {
+          setUserName(data.name)
         }
         
         // Update location
-        if (data.data?.location || data.data?.city) {
-          setLocation(data.data.location || data.data.city)
+        if (data.location || data.city) {
+          setLocation(data.location || data.city)
         }
         
         // Update farms count
-        if (data.data?.farms) {
-          setTotalFarms(data.data.farms.length)
-        } else if (data.farms) {
+        if (data.farms) {
           setTotalFarms(data.farms.length)
         }
       }
     } catch (error) {
       console.error('Error fetching profile data:', error)
+      // Keep default values on error
+      setUserName('Ramesh Kumar')
+      setLocation('Kochi')
       setTotalFarms(0)
     }
   }
@@ -113,7 +116,18 @@ const Home: React.FC = () => {
   const generateAdvisory = async () => {
     setIsGeneratingAdvisory(true)
     try {
-      await fetchDashboardData()
+      const data = await apiCall(API_ENDPOINTS.HOME_ADVISORY_REGENERATE, {
+        method: 'POST',
+        body: JSON.stringify({ location })
+      })
+      
+      if (data.success && dashboardData) {
+        setDashboardData({
+          ...dashboardData,
+          advisory: data.data.advisory,
+          last_updated: data.data.generated_at
+        })
+      }
     } catch (error) {
       console.error('Error generating advisory:', error)
     } finally {
@@ -336,9 +350,16 @@ const Home: React.FC = () => {
           
           {dashboardData?.advisory ? (
             <div className="bg-white/80 dark:bg-background-dark/50 backdrop-blur-sm rounded-xl p-4 border border-primary-100 dark:border-primary-900">
-              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300">
-                <div className="whitespace-pre-line text-sm leading-relaxed">
-                  {dashboardData.advisory}
+              <div className="text-gray-700 dark:text-gray-300">
+                <div className="space-y-3">
+                  {dashboardData.advisory.split('\n').map((line: string, index: number) => (
+                    line.trim() && (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <p className="text-sm leading-relaxed">{line.trim()}</p>
+                      </div>
+                    )
+                  ))}
                 </div>
               </div>
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-primary-100 dark:border-primary-800">

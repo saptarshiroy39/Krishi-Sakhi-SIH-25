@@ -35,7 +35,7 @@ def get_gemini_chat_client():
 
     # Configure with first API key each time to ensure correct key is used
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-pro")
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 
 def get_gemini_utils_client():
@@ -46,12 +46,52 @@ def get_gemini_utils_client():
 
     # Configure with second API key each time to ensure correct key is used
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-pro")
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 
 def get_gemini_client():
     """Backward compatibility - defaults to chat client"""
     return get_gemini_chat_client()
+
+
+def get_groq_summary(text, max_length=100):
+    """Use GROQ for lightweight text summarization tasks"""
+    try:
+        client = get_groq_client()
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": f"Summarize the following text in maximum {max_length} characters. Keep it concise and relevant for farmers."},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=50,
+            temperature=0.3
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"GROQ summarization error: {e}")
+        return text[:max_length] + "..." if len(text) > max_length else text
+
+
+def get_groq_classification(text, categories):
+    """Use GROQ for lightweight text classification tasks"""
+    try:
+        client = get_groq_client()
+        categories_str = ", ".join(categories)
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": f"Classify the following text into one of these categories: {categories_str}. Respond with only the category name."},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=10,
+            temperature=0.1
+        )
+        result = response.choices[0].message.content.strip()
+        return result if result in categories else categories[0]
+    except Exception as e:
+        print(f"GROQ classification error: {e}")
+        return categories[0] if categories else "unknown"
 
 
 def enhance_with_emojis(text, language="en"):
@@ -194,10 +234,6 @@ def chat():
     message = request.json.get("message")
     if not message:
         return jsonify({"error": "Please provide a message"}), 400
-
-    api_key = os.environ.get("GROQ_API_KEY")
-    if not api_key:
-        return jsonify({"error": "GROQ API key not configured"}), 500
 
     # Detect language and create appropriate system prompt
     def detect_language(text):
@@ -541,3 +577,55 @@ def test_api_keys():
         results["api_key_2"] = f"Error: {str(e)}"
 
     return jsonify(results)
+
+
+@chat_bp.route("/quick-query", methods=["POST"])
+def quick_query():
+    """Handle lightweight AI queries using GROQ for faster responses"""
+    try:
+        data = request.get_json()
+        query = data.get("query")
+        task_type = data.get("type", "general")  # general, summary, classify
+        
+        if not query:
+            return jsonify({"error": "Query is required"}), 400
+
+        # Use GROQ for lightweight, fast responses
+        client = get_groq_client()
+        
+        # Customize system prompt based on task type
+        if task_type == "summary":
+            system_prompt = "You are a concise agricultural assistant. Provide brief, practical summaries for farmers. Keep responses under 150 words."
+        elif task_type == "classify":
+            categories = data.get("categories", ["general", "pest", "disease", "weather", "fertilizer"])
+            return jsonify({"classification": get_groq_classification(query, categories)})
+        else:
+            system_prompt = "You are a helpful agricultural assistant. Provide quick, practical answers for farmers. Keep responses concise but helpful."
+
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+
+        ai_response = response.choices[0].message.content.strip()
+        
+        # Add emojis for better user experience
+        enhanced_response = enhance_with_emojis(ai_response, "en")
+        
+        return jsonify({
+            "response": enhanced_response,
+            "type": task_type,
+            "powered_by": "GROQ"
+        })
+
+    except Exception as e:
+        print(f"GROQ quick query error: {str(e)}")
+        return jsonify({
+            "error": "Unable to process quick query at this time",
+            "fallback": "Please try the main chat for detailed assistance"
+        }), 500

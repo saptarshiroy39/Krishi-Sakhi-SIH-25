@@ -45,7 +45,7 @@ def get_knowledge_content():
                 500,
             )
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         # Add context for better responses
         context = """You are an expert agricultural advisor for Kerala, India. Provide detailed, practical, and location-specific advice. 
@@ -83,7 +83,7 @@ def get_market_prices():
         if not GEMINI_API_KEY_2:
             return jsonify({"success": False, "error": "API key not configured"}), 500
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = """Provide current market price information for major crops in Kerala, India including:
         - Rice (different varieties)
         - Coconut
@@ -116,10 +116,14 @@ def get_market_prices():
 def get_current_weather(city="Kochi"):
     """Get current weather data from OpenWeatherMap API"""
     try:
-        url = f"{OPENWEATHER_BASE_URL}/weather"
-        params = {"q": city, "appid": OPENWEATHER_API_KEY, "units": "metric"}
-
-        response = requests.get(url, params=params)
+        # Use working API key directly
+        api_key = "1abad437668dbf695c0e16bdfcb6b403"
+            
+        url = f"{OPENWEATHER_BASE_URL}/weather" 
+        params = {"q": city, "appid": api_key, "units": "metric"}
+        
+        response = requests.get(url, params=params, timeout=10)
+        
         if response.status_code == 200:
             data = response.json()
             return {
@@ -128,8 +132,9 @@ def get_current_weather(city="Kochi"):
                 "humidity": data["main"]["humidity"],
                 "wind_speed": data["wind"]["speed"],
             }
-        return None
-    except:
+        else:
+            return None
+    except Exception as e:
         return None
 
 
@@ -144,7 +149,7 @@ def get_weather_analysis():
         if not GEMINI_API_KEY_2:
             return jsonify({"success": False, "error": "API key not configured"}), 500
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = f"""Based on the current weather conditions in Kerala:
         - Temperature: {weather_data['temperature']}°C
         - Condition: {weather_data['description']}

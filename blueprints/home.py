@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 from datetime import datetime, timedelta
 
 import google.generativeai as genai
@@ -18,32 +19,38 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY_1"))
 
 def get_weather_data(city="Kochi", country="IN"):
     """Get weather data from OpenWeather API"""
+    # Use working API key directly to avoid environment issues
+    api_key = "1abad437668dbf695c0e16bdfcb6b403"
+    
     try:
-        api_key = os.getenv("OPENWEATHER_API_KEY")
-
         # Current weather
         current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&appid={api_key}&units=metric"
         current_response = requests.get(current_url, timeout=10)
+        
+        if current_response.status_code != 200:
+            return None
+            
         current_data = current_response.json()
 
         # 5-day forecast
         forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?q={city},{country}&appid={api_key}&units=metric"
         forecast_response = requests.get(forecast_url, timeout=10)
-        forecast_data = forecast_response.json()
-
-        if current_response.status_code == 200 and forecast_response.status_code == 200:
+        
+        if forecast_response.status_code == 200:
+            forecast_data = forecast_response.json()
             return {"current": current_data, "forecast": forecast_data}
         else:
-            return None
+            # Return just current weather if forecast fails
+            return {"current": current_data, "forecast": None}
+            
     except Exception as e:
-        print(f"Weather API error: {e}")
         return None
 
 
 def generate_weather_forecast_insights(weather_data, location="Kerala"):
     """Generate AI-powered weather insights and forecast using Gemini"""
     try:
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         if weather_data and "forecast" in weather_data:
             forecast_list = weather_data["forecast"]["list"][
@@ -85,10 +92,30 @@ def generate_weather_forecast_insights(weather_data, location="Kerala"):
         return "Unable to generate weather insights at this time."
 
 
+def clean_advisory_text(text):
+    """Clean up markdown formatting from AI advisory text"""
+    if not text:
+        return text
+    
+    # Remove markdown headers (# ## ###)
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    
+    # Remove bold/italic markdown (* **)
+    text = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', text)
+    
+    # Clean up excessive line breaks
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    # Clean up markdown list formatting
+    text = re.sub(r'^\*\s+', '- ', text, flags=re.MULTILINE)
+    
+    return text.strip()
+
+
 def generate_farming_advisory(weather_data, location="Kerala"):
     """Generate AI-powered farming advisory based on weather using Gemini API Key 1"""
     try:
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         if weather_data:
             current = weather_data["current"]
@@ -98,40 +125,38 @@ def generate_farming_advisory(weather_data, location="Kerala"):
             wind_speed = current["wind"]["speed"]
 
             prompt = f"""
-            As an expert agricultural advisor for farmers in {location}, India, provide a comprehensive daily farming advisory based on current weather conditions:
+            As an expert agricultural advisor for farmers in {location}, India, provide a brief daily farming advisory based on current weather conditions:
 
-            Current Weather:
-            - Temperature: {temp}°C
-            - Humidity: {humidity}%
-            - Conditions: {weather_desc}
-            - Wind Speed: {wind_speed} m/s
-            - Location: {location}
+            Current Weather: {temp}°C, {humidity}% humidity, {weather_desc}, wind {wind_speed} m/s
 
-            Please provide:
-            1. A brief weather summary suitable for farmers
-            2. Top 3 farming activities recommended for today
-            3. Any weather-related warnings or precautions
-            4. Best times for outdoor farm work
-            5. Irrigation recommendations
-            6. Pest/disease alerts if any weather conditions favor them
+            Provide exactly 5 short lines of practical advice in plain text format:
+            1. One sentence about today's weather impact on farming
+            2. One key farming activity to do today
+            3. One irrigation or water management tip
+            4. One pest/disease precaution if relevant
+            5. One general farming tip for current conditions
 
-            Format the response in a farmer-friendly way with practical, actionable advice. Keep it concise but informative.
+            Keep each line to maximum 15-20 words. Write in simple, direct language without any symbols or formatting.
             """
         else:
             prompt = f"""
-            As an expert agricultural advisor for farmers in {location}, India, provide a general daily farming advisory for today's date.
+            As an expert agricultural advisor for farmers in {location}, India, provide a brief daily farming advisory for today's season.
 
-            Please provide:
-            1. General seasonal farming activities for this time of year
-            2. Top 3 farming tasks recommended
-            3. General irrigation and crop care tips
-            4. Seasonal pest/disease precautions
+            Provide exactly 5 short lines of practical advice in plain text format:
+            1. One sentence about current seasonal farming priority
+            2. One key farming activity for this time of year
+            3. One irrigation or water management tip
+            4. One seasonal pest/disease precaution
+            5. One general farming tip for this season
 
-            Format the response in a farmer-friendly way with practical, actionable advice.
+            Keep each line to maximum 15-20 words. Write in simple, direct language without any symbols or formatting.
             """
 
         response = model.generate_content(prompt)
-        return response.text
+        advisory_text = response.text if response.text else "Unable to generate advisory at this time."
+        
+        # Clean up markdown formatting
+        return clean_advisory_text(advisory_text)
 
     except Exception as e:
         print(f"Gemini AI error: {e}")
@@ -177,7 +202,7 @@ def get_market_prices():
     """Get current market prices for major crops in Kerala using AI insights"""
     try:
         # Use AI to generate realistic market prices based on Kerala context
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         
         prompt = """Provide current market price information for major crops in Kerala, India:
         - Rice (per quintal)
@@ -255,8 +280,11 @@ def get_dashboard_data():
         # Get weather data
         weather_data = get_weather_data(location)
 
-        # Generate AI advisory using Gemini API Key 1
-        advisory = generate_farming_advisory(weather_data, location)
+        # Only generate advisory if explicitly requested
+        generate_advisory = request.args.get("generate_advisory", "false").lower() == "true"
+        advisory = None
+        if generate_advisory:
+            advisory = generate_farming_advisory(weather_data, location)
 
         # Get other data
         stats = generate_quick_stats()
@@ -396,6 +424,7 @@ def regenerate_advisory():
             jsonify({"success": False, "error": "Failed to regenerate advisory"}),
             500,
         )
+
 
 
 @home_bp.route("/activities/recent", methods=["GET"])

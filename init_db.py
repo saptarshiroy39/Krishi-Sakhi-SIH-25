@@ -22,28 +22,8 @@ def create_app():
     app = Flask(__name__)
     load_dotenv()
 
-    # Database configuration
-    database_url = os.environ.get("DATABASE_URL")
-    if database_url:
-        if database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
-        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    else:
-        postgres_config = {
-            "host": os.environ.get("DB_HOST", "localhost"),
-            "port": os.environ.get("DB_PORT", "5432"),
-            "database": os.environ.get("DB_NAME", "krishi_sakhi"),
-            "username": os.environ.get("DB_USER", "postgres"),
-            "password": os.environ.get("DB_PASSWORD", ""),
-        }
-
-        if all(postgres_config.values()) and postgres_config["password"]:
-            app.config["SQLALCHEMY_DATABASE_URI"] = (
-                f"postgresql://{postgres_config['username']}:{postgres_config['password']}"
-                f"@{postgres_config['host']}:{postgres_config['port']}/{postgres_config['database']}"
-            )
-        else:
-            app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+    # Database configuration - Force SQLite for now
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
 
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 

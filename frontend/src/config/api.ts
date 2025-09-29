@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   
   HOME_DASHBOARD: (location: string) => `${API_BASE_URL}/home/dashboard?location=${location}`,
   HOME_WEATHER: (location: string) => `${API_BASE_URL}/home/weather-forecast/${location}`,
+  HOME_ADVISORY_REGENERATE: `${API_BASE_URL}/home/advisory/regenerate`,
   
   CHAT: `${API_BASE_URL}/chat`,
   CHAT_IMAGE: `${API_BASE_URL}/chat/image`,
