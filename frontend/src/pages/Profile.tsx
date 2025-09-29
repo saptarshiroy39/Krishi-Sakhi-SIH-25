@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { 
   User, Phone, MapPin, Edit2, Save,
   Wheat, Trees, Heart, Droplets, Mountain, 
-  CheckCircle,
-  Mail, Trash2, X, Plus, Search, RefreshCw, Info
+  ChevronDown, Thermometer, Sprout, Bug, Layers, Waves,
+  Mail, Trash2, X, Plus, Search, RefreshCw, Info, LogOut
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext'
 import { API_ENDPOINTS, apiCall } from '../config/api'
@@ -15,28 +15,6 @@ const KERALA_DISTRICTS = [
   'Kozhikode', 'Wayanad', 'Kannur', 'Kasaragod'
 ]
 
-// District-wise locations mapping
-const DISTRICT_LOCATIONS: { [key: string]: string[] } = {
-  'Thiruvananthapuram': ['Thiruvananthapuram', 'Neyyattinkara', 'Varkala', 'Attingal', 'Nedumangad', 'Kazhakoottam', 'Balaramapuram', 'Kattakkada'],
-  'Kollam': ['Kollam', 'Punalur', 'Paravur', 'Karunagappally', 'Kottarakkara', 'Anchal', 'Kunnathur', 'Sasthamcotta'],
-  'Pathanamthitta': ['Pathanamthitta', 'Adoor', 'Thiruvalla', 'Ranni', 'Mallappally', 'Konni', 'Kozhencherry', 'Pandalam'],
-  'Alappuzha': ['Alappuzha', 'Kayamkulam', 'Cherthala', 'Mavelikkara', 'Haripad', 'Ambalappuzha', 'Kuttanad', 'Mannar'],
-  'Kottayam': ['Kottayam', 'Changanassery', 'Pala', 'Ettumanoor', 'Vaikom', 'Mundakayam', 'Erattupetta', 'Kanjirappally'],
-  'Idukki': ['Thodupuzha', 'Munnar', 'Kumily', 'Kattappana', 'Painavu', 'Adimali', 'Nedumkandam', 'Devikulam'],
-  'Ernakulam': ['Kochi', 'Aluva', 'Perumbavoor', 'Angamaly', 'Kothamangalam', 'Muvattupuzha', 'Kalady', 'Kizhakkambalam'],
-  'Thrissur': ['Thrissur', 'Chalakudy', 'Kodungallur', 'Irinjalakuda', 'Kunnamkulam', 'Guruvayur', 'Wadakkancherry', 'Ollur'],
-  'Palakkad': ['Palakkad', 'Ottappalam', 'Shoranur', 'Chittur', 'Mannarkkad', 'Alathur', 'Pattambi', 'Sreekrishnapuram'],
-  'Malappuram': ['Malappuram', 'Tirur', 'Perinthalmanna', 'Ponnani', 'Nilambur', 'Manjeri', 'Kondotty', 'Wandoor'],
-  'Kozhikode': ['Kozhikode', 'Vadakara', 'Koyilandy', 'Feroke', 'Balussery', 'Mukkam', 'Quilandy', 'Thamarassery'],
-  'Wayanad': ['Kalpetta', 'Mananthavady', 'Sulthan Bathery', 'Panamaram', 'Vythiri', 'Meppadi', 'Ambalavayal', 'Thirunelli'],
-  'Kannur': ['Kannur', 'Thalassery', 'Payyanur', 'Iritty', 'Mattannur', 'Panoor', 'Kanhangad', 'Payyannur'],
-  'Kasaragod': ['Kasaragod', 'Kanhangad', 'Nileshwar', 'Uppala', 'Bekal', 'Manjeshwar', 'Cheruvathur', 'Bedadka']
-}
-
-// Get all locations sorted
-
-
-
 
 interface FarmerProfile {
   id: number
@@ -45,10 +23,6 @@ interface FarmerProfile {
   email?: string
   village_town?: string
   district?: string
-  experience_years?: number
-  profile_image?: string
-  occupation?: string
-  farm_type?: string
 }
 
 interface FarmData {
@@ -59,12 +33,13 @@ interface FarmData {
   location: string
   crops: string[]
   livestock: string[]
-  irrigation_system?: string
+  terrain_type?: string
+  climate_zone?: string
   soil_type?: string
   water_source?: string
-  farm_status?: string
-  organic_certified?: boolean
-  established_year?: number
+  irrigation_system?: string
+  fertilizer_type?: string
+  pest_control?: string
 }
 
 
@@ -74,6 +49,7 @@ const Profile: React.FC = () => {
   
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showProfileDetails, setShowProfileDetails] = useState(false)
   const [showAddFarm, setShowAddFarm] = useState(false)
   const [showEditFarm, setShowEditFarm] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
@@ -90,6 +66,7 @@ const Profile: React.FC = () => {
   const [newFarmData, setNewFarmData] = useState({
     name: '',
     size: 1.0,
+    unit: 'acres',
     district: '',
     location: '',
     crops: '',
@@ -97,14 +74,16 @@ const Profile: React.FC = () => {
     irrigation_system: '',
     soil_type: '',
     water_source: '',
-    farm_status: '',
-    organic_certified: false,
-    established_year: new Date().getFullYear()
+    terrain_type: '',
+    climate_zone: '',
+    fertilizer_type: '',
+    pest_control: ''
   })
   const [editFarmData, setEditFarmData] = useState({
     id: 0,
     name: '',
     size: 0,
+    unit: 'acres',
     district: '',
     location: '',
     crops: '',
@@ -112,9 +91,10 @@ const Profile: React.FC = () => {
     irrigation_system: '',
     soil_type: '',
     water_source: '',
-    farm_status: '',
-    organic_certified: false,
-    established_year: new Date().getFullYear()
+    terrain_type: '',
+    climate_zone: '',
+    fertilizer_type: '',
+    pest_control: ''
   })
   const [profileData, setProfileData] = useState<FarmerProfile>({
     id: 1,
@@ -123,8 +103,6 @@ const Profile: React.FC = () => {
     email: 'ramesh.kumar@email.com',
     village_town: 'Kattappana',
     district: 'Idukki',
-    profile_image: '',
-    farm_type: 'Mixed Farming'
   })
   
   const [farmData, setFarmData] = useState<FarmData[]>([])
@@ -143,8 +121,6 @@ const Profile: React.FC = () => {
           email: data.email,
           village_town: data.location,
           district: 'Idukki', // Default district
-          profile_image: '',
-          farm_type: 'Mixed Farming'
         })
         
         // Set farm data with proper structure
@@ -155,8 +131,6 @@ const Profile: React.FC = () => {
           soil_type: farm.soil_type || undefined,
           water_source: farm.water_source || undefined,
           farm_status: farm.farm_status || undefined,
-          organic_certified: farm.organic_certified || false,
-          established_year: farm.established_year || new Date().getFullYear()
         }))
         setFarmData(farms)
         setFarmOrder(farms.map((f: any) => f.id))
@@ -174,9 +148,6 @@ const Profile: React.FC = () => {
           irrigation_system: 'Drip Irrigation',
           soil_type: 'Loamy Soil',
           water_source: 'Borewell',
-          farm_status: 'Active',
-          organic_certified: true,
-          established_year: 2015
         }
       ])
     }
@@ -226,9 +197,6 @@ const Profile: React.FC = () => {
         email: profileData.email?.trim() || null,
         village_town: profileData.village_town?.trim() || null,
         district: profileData.district || null,
-        experience_years: profileData.experience_years || 0,
-        occupation: profileData.occupation?.trim() || null,
-        farm_type: profileData.farm_type || null
       }
 
       // Optimistic update - switch to view mode immediately for better UX
@@ -265,6 +233,25 @@ const Profile: React.FC = () => {
     }))
   }
 
+  const handleLogout = () => {
+    // Show confirmation dialog
+    const confirmed = confirm(t('confirmLogout', { 
+      en: 'Are you sure you want to logout?', 
+      ml: 'നിങ്ങൾക്ക് ലോഗ് ഔട്ട് ചെയ്യാൻ ഉറപ്പാണോ?' 
+    }))
+    
+    if (confirmed) {
+      // Clear any stored user data
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      
+      // Navigate to login page
+      window.location.href = '/login'
+      
+      console.log('User logged out successfully')
+    }
+  }
+
 
 
 
@@ -276,6 +263,7 @@ const Profile: React.FC = () => {
         id: farm.id,
         name: farm.name || `Farm ${farm.id}`,
         size: farm.size,
+        unit: 'acres',
         district: farm.district || '',
         location: farm.location,
         crops: farm.crops.join(', '),
@@ -283,9 +271,10 @@ const Profile: React.FC = () => {
         irrigation_system: farm.irrigation_system || '',
         soil_type: farm.soil_type || '',
         water_source: farm.water_source || '',
-        farm_status: farm.farm_status || '',
-        organic_certified: farm.organic_certified || false,
-        established_year: farm.established_year || new Date().getFullYear()
+        terrain_type: farm.terrain_type || '',
+        climate_zone: farm.climate_zone || '',
+        fertilizer_type: farm.fertilizer_type || '',
+        pest_control: farm.pest_control || ''
       })
       setEditCropInput(farm.crops.join(', '))
       setEditLivestockInput(farm.livestock.join(', '))
@@ -313,9 +302,10 @@ const Profile: React.FC = () => {
             irrigation_system: editFarmData.irrigation_system,
             soil_type: editFarmData.soil_type,
             water_source: editFarmData.water_source,
-            farm_status: editFarmData.farm_status,
-            organic_certified: editFarmData.organic_certified,
-            established_year: editFarmData.established_year
+            terrain_type: editFarmData.terrain_type,
+            climate_zone: editFarmData.climate_zone,
+            fertilizer_type: editFarmData.fertilizer_type,
+            pest_control: editFarmData.pest_control,
           })
         })
         
@@ -345,9 +335,10 @@ const Profile: React.FC = () => {
               irrigation_system: editFarmData.irrigation_system,
               soil_type: editFarmData.soil_type,
               water_source: editFarmData.water_source,
-              farm_status: editFarmData.farm_status,
-              organic_certified: editFarmData.organic_certified,
-              established_year: editFarmData.established_year
+              terrain_type: editFarmData.terrain_type,
+              climate_zone: editFarmData.climate_zone,
+              fertilizer_type: editFarmData.fertilizer_type,
+              pest_control: editFarmData.pest_control,
             }
           : farm
       ))
@@ -356,6 +347,7 @@ const Profile: React.FC = () => {
         id: 0,
         name: '',
         size: 0,
+        unit: 'acres',
         district: '',
         location: '',
         crops: '',
@@ -363,9 +355,10 @@ const Profile: React.FC = () => {
         irrigation_system: '',
         soil_type: '',
         water_source: '',
-        farm_status: '',
-        organic_certified: false,
-        established_year: new Date().getFullYear()
+        terrain_type: '',
+        climate_zone: '',
+        fertilizer_type: '',
+        pest_control: ''
       })
       setEditCropInput('')
       setEditLivestockInput('')
@@ -448,9 +441,10 @@ const Profile: React.FC = () => {
             irrigation_system: newFarmData.irrigation_system || null,
             soil_type: newFarmData.soil_type || null,
             water_source: newFarmData.water_source || null,
-            farm_status: newFarmData.farm_status || null,
-            organic_certified: newFarmData.organic_certified,
-            established_year: newFarmData.established_year
+            terrain_type: newFarmData.terrain_type || null,
+            climate_zone: newFarmData.climate_zone || null,
+            fertilizer_type: newFarmData.fertilizer_type || null,
+            pest_control: newFarmData.pest_control || null,
           })
         })
         
@@ -474,16 +468,17 @@ const Profile: React.FC = () => {
         id: nextId,
         name: farmName,
         size: newFarmData.size,
-        location: newFarmData.location,
         district: newFarmData.district,
+        location: newFarmData.location,
         crops: farmCrops,
         livestock: farmLivestock,
         irrigation_system: newFarmData.irrigation_system || undefined,
         soil_type: newFarmData.soil_type || undefined,
         water_source: newFarmData.water_source || undefined,
-        farm_status: newFarmData.farm_status || undefined,
-        organic_certified: newFarmData.organic_certified,
-        established_year: newFarmData.established_year || undefined
+        terrain_type: newFarmData.terrain_type || undefined,
+        climate_zone: newFarmData.climate_zone || undefined,
+        fertilizer_type: newFarmData.fertilizer_type || undefined,
+        pest_control: newFarmData.pest_control || undefined,
       }
       
       console.log('Adding farm to local state:', newFarm)
@@ -499,6 +494,7 @@ const Profile: React.FC = () => {
       setNewFarmData({ 
         name: '',
         size: 1,
+        unit: 'acres',
         district: '',
         location: '', 
         crops: '', 
@@ -506,9 +502,10 @@ const Profile: React.FC = () => {
         irrigation_system: '',
         soil_type: '',
         water_source: '',
-        farm_status: '',
-        organic_certified: false,
-        established_year: new Date().getFullYear()
+        terrain_type: '',
+        climate_zone: '',
+        fertilizer_type: '',
+        pest_control: ''
       })
       setCropInput('')
       setLivestockInput('')
@@ -519,11 +516,6 @@ const Profile: React.FC = () => {
     }
   }
 
-  // Helper function to get locations for selected district
-  const getLocationsForDistrict = (district: string): string[] => {
-    return DISTRICT_LOCATIONS[district] || []
-  }
-
   // Helper function to toggle farm expansion
   const toggleFarmExpansion = (farmId: number) => {
     setExpandedFarms(prev => ({
@@ -531,11 +523,6 @@ const Profile: React.FC = () => {
       [farmId]: !prev[farmId]
     }))
   }
-
-
-
-
-
 
 
   // Get ordered farm data
@@ -585,194 +572,213 @@ const Profile: React.FC = () => {
               {t('profile', { en: 'Profile', ml: 'പ്രൊഫൈൽ' })}
             </h1>
             
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                console.log('Button clicked, isEditing:', isEditing)
-                if (isEditing) {
-                  handleSave()
-                } else {
-                  setIsEditing(true)
-                }
-              }}
-              className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${
-                isEditing 
-                  ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              {isEditing ? (
-                <Save className="w-5 h-5" strokeWidth={2} />
-              ) : (
-                <Edit2 className="w-5 h-5" strokeWidth={2} />
-              )}
-            </button>
-          </div>
-
-          {/* Profile Card */}
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-dark/60 dark:to-surface-dark/50 rounded-2xl p-6 shadow-card border border-primary-200 dark:border-primary-900 mb-6">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-primary-400 rounded-2xl flex items-center justify-center shadow-card overflow-hidden">
-                  {profileData.profile_image ? (
-                    <img 
-                      src={profileData.profile_image} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-8 h-8 text-white" strokeWidth={2} />
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex-1">
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3">
+              {/* Edit/Save Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  console.log('Button clicked, isEditing:', isEditing)
+                  if (isEditing) {
+                    handleSave()
+                  } else {
+                    setIsEditing(true)
+                  }
+                }}
+                className={`p-3 rounded-full ${
+                  isEditing 
+                    ? 'bg-primary-500 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                }`}
+                title={isEditing ? t('save', { en: 'Save', ml: 'സേവ്' }) : t('edit', { en: 'Edit', ml: 'എഡിറ്റ്' })}
+              >
                 {isEditing ? (
-                  <input
-                    type="text"
-                    value={profileData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="bg-white/50 dark:bg-gray-800/50 border border-primary-300 dark:border-primary-700 rounded-xl px-3 py-2 text-gray-900 dark:text-text-primary font-bold text-lg w-full focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  <Save className="w-5 h-5" strokeWidth={2} />
                 ) : (
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary">{profileData.name}</h2>
+                  <Edit2 className="w-5 h-5" strokeWidth={2} />
                 )}
-                <div className="flex items-center space-x-2 mt-1">
-                  <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400" strokeWidth={2} />
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    {profileData.village_town}{profileData.district ? `, ${profileData.district}` : ''}
-                  </span>
-                </div>
-              </div>
+              </button>
+              
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
+                title={t('logout', { en: 'Logout', ml: 'ലോഗ് ഔട്ട്' })}
+              >
+                <LogOut className="w-5 h-5" strokeWidth={2} />
+              </button>
             </div>
-
-
           </div>
 
-          {/* Personal Information */}
-          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary mb-4 flex items-center">
-              <User className="w-5 h-5 text-primary-500 mr-2" />
-              {t('personalInfo', { en: 'Personal Information', ml: 'വ്യക്തിഗത വിവരങ്ങൾ' })}
-            </h3>
-            
-            <div className="space-y-4">
-              {/* Phone Number */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" strokeWidth={2} />
+          {/* Profile & Personal Information Card */}
+          <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-dark/60 dark:to-surface-dark/50 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-900 mb-6">
+            {/* Profile Header */}
+            <div className={`flex items-center justify-between ${showProfileDetails ? 'mb-6' : 'mb-2'}`}>
+              <div className="flex items-center space-x-4 flex-1">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center overflow-hidden">
+                    <User className="w-8 h-8 text-white" strokeWidth={2} />
+                  </div>
                 </div>
+                
                 <div className="flex-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {t('phoneNumber', { en: 'Phone Number', ml: 'ഫോൺ നമ്പർ' })}
-                  </p>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={profileData.phone_number}
-                      onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.phone_number}</p>
-                  )}
-                </div>
-              </div>
-              
-              {/* Email Address */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-green-600 dark:text-green-400" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {t('emailAddress', { en: 'Email Address', ml: 'ഇമെയിൽ വിലാസം' })}
-                  </p>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={profileData.email || ''}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder={t('emailPlaceholder', { en: 'Enter your email', ml: 'നിങ്ങളുടെ ഇമെയിൽ നൽകുക' })}
-                      className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.email || 'Not provided'}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Village/Town */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {t('villageTown', { en: 'Village/Town', ml: 'ഗ്രാമം/പട്ടണം' })}
-                  </p>
                   {isEditing ? (
                     <input
                       type="text"
-                      value={profileData.village_town || ''}
-                      onChange={(e) => handleInputChange('village_town', e.target.value)}
-                      placeholder={t('villagePlaceholder', { en: 'Enter village or town', ml: 'ഗ്രാമം അല്ലെങ്കിൽ പട്ടണം നൽകുക' })}
-                      className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      value={profileData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="bg-white/50 dark:bg-gray-800/50 border border-primary-300 dark:border-primary-700 rounded-xl px-3 py-2 text-gray-900 dark:text-text-primary font-bold text-lg w-full focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   ) : (
-                    <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.village_town || 'Not provided'}</p>
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary">{profileData.name}</h2>
+                      {!showProfileDetails && (
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400" strokeWidth={2} />
+                          <span className="text-gray-700 dark:text-gray-300 text-sm">
+                            {profileData.village_town}{profileData.district ? `, ${profileData.district}` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
-
-              {/* District */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-orange-600 dark:text-orange-400" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {t('district', { en: 'District', ml: 'ജില്ല' })}
-                  </p>
-                  {isEditing ? (
-                    <select
-                      value={profileData.district || ''}
-                      onChange={(e) => handleInputChange('district', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    >
-                      <option value="">{t('selectDistrict', { en: 'Select District', ml: 'ജില്ല തിരഞ്ഞെടുക്കുക' })}</option>
-                      {KERALA_DISTRICTS.map((district) => (
-                        <option key={district} value={district}>{district}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.district || 'Not provided'}</p>
-                  )}
-                </div>
-              </div>
-
-
-
-
+              
+              {/* Chevron Icon */}
+              <button
+                onClick={() => setShowProfileDetails(!showProfileDetails)}
+                className="p-2 rounded-lg"
+              >
+                <ChevronDown 
+                  className={`w-5 h-5 text-primary-600 dark:text-primary-400 ${
+                    showProfileDetails ? 'rotate-180' : ''
+                  }`} 
+                  strokeWidth={2} 
+                />
+              </button>
             </div>
+
+            {/* Personal Information Section */}
+            {showProfileDetails && (
+              <div className="pt-4">
+                <div className="space-y-4">
+                {/* Phone Number */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-white" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {t('phoneNumber', { en: 'Phone Number', ml: 'ഫോൺ നമ്പർ' })}
+                    </p>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        value={profileData.phone_number}
+                        onChange={(e) => handleInputChange('phone_number', e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.phone_number}</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Email Address */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-white" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {t('emailAddress', { en: 'Email Address', ml: 'ഇമെയിൽ വിലാസം' })}
+                    </p>
+                    {isEditing ? (
+                      <input
+                        type="email"
+                        value={profileData.email || ''}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder={t('emailPlaceholder', { en: 'Enter your email', ml: 'നിങ്ങളുടെ ഇമെയിൽ നൽകുക' })}
+                        className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.email || 'Not provided'}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Village/Town */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-white" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {t('villageTown', { en: 'Village/Town', ml: 'ഗ്രാമം/പട്ടണം' })}
+                    </p>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={profileData.village_town || ''}
+                        onChange={(e) => handleInputChange('village_town', e.target.value)}
+                        placeholder={t('villagePlaceholder', { en: 'Enter village or town', ml: 'ഗ്രാമം അല്ലെങ്കിൽ പട്ടണം നൽകുക' })}
+                        className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.village_town || 'Not provided'}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* District */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-white" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {t('district', { en: 'District', ml: 'ജില്ല' })}
+                    </p>
+                    {isEditing ? (
+                      <select
+                        value={profileData.district || ''}
+                        onChange={(e) => handleInputChange('district', e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="">{t('selectDistrict', { en: 'Select District', ml: 'ജില്ല തിരഞ്ഞെടുക്കുക' })}</option>
+                        {KERALA_DISTRICTS.map((district) => (
+                          <option key={district} value={district}>{district}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-text-primary">{profileData.district || 'Not provided'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
           </div>
 
           {/* Farm Information */}
-          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card">
+          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border-2 border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary flex items-center">
-                <Trees className="w-5 h-5 text-primary-500 mr-2" />
-                {t('farmDetails', { en: 'Farm Details', ml: 'ഫാം വിശദാംശങ്ങൾ' })}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary flex items-center space-x-3">
+                <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                  <Trees className="w-5 h-5 text-white" />
+                </div>
+                <span>{t('farmDetails', { en: 'Farm Details', ml: 'ഫാം വിശദാംശങ്ങൾ' })}</span>
               </h3>
               
               <div className="flex items-center space-x-2">
                 {/* Search Button */}
                 <button 
                   onClick={() => setShowSearch(!showSearch)}
-                  className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${
+                  className={`p-3 rounded-full ${
                     showSearch 
-                      ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      ? 'bg-primary-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                   }`}
                 >
                   <Search className="w-5 h-5" strokeWidth={2} />
@@ -780,7 +786,7 @@ const Profile: React.FC = () => {
                 {/* Add Farm Button */}
                 <button 
                   onClick={() => setShowAddFarm(true)}
-                  className="bg-primary-500 hover:bg-primary-600 text-white p-3 rounded-full transition-all duration-200 active:scale-95"
+                  className="bg-primary-500 text-white p-3 rounded-full"
                 >
                   <Plus className="w-5 h-5" strokeWidth={2} />
                 </button>
@@ -810,7 +816,6 @@ const Profile: React.FC = () => {
                 if (!searchTerm) return true;
                 const lowerSearchTerm = searchTerm.toLowerCase();
                 return (
-                  farm.location.toLowerCase().includes(lowerSearchTerm) ||
                   farm.crops.some(crop => crop.toLowerCase().includes(lowerSearchTerm)) ||
                   farm.livestock.some(animal => animal.toLowerCase().includes(lowerSearchTerm)) ||
                   `farm ${farm.id}`.toLowerCase().includes(lowerSearchTerm)
@@ -818,7 +823,7 @@ const Profile: React.FC = () => {
               }).map((farm) => (
                 <div 
                   key={farm.id} 
-                  className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800 transition-all duration-200 hover:shadow-lg hover:border-green-300 dark:hover:border-green-700"
+                  className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800"
                 >
                   {/* Farm Header */}
                   <div className="p-4">
@@ -833,14 +838,7 @@ const Profile: React.FC = () => {
                           <MapPin className="w-4 h-4 mr-1" />
                           <span>{farm.location}</span>
                         </div>
-                        {!expandedFarms[farm.id] && (
-                          <div className="mt-2">
-                          <span className="inline-flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-medium">
-                            <Trees className="w-3 h-3 mr-1" />
-                            {farm.size.toFixed(2)} {t('acres', { en: 'acres', ml: 'ఏക్కర్' })}
-                          </span>
-                          </div>
-                        )}
+                        {!expandedFarms[farm.id] && null}
                       </div>
                       </div>
                       
@@ -849,10 +847,10 @@ const Profile: React.FC = () => {
                         {/* Info Button */}
                         <button
                           onClick={() => toggleFarmExpansion(farm.id)}
-                          className={`p-2 rounded-full transition-all duration-200 ${
+                          className={`p-2 rounded-full ${
                             expandedFarms[farm.id]
                               ? 'text-primary-500'
-                              : 'text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'
+                              : 'text-gray-600 dark:text-gray-400'
                           }`}
                         >
                           <Info className="w-4 h-4" strokeWidth={2} />
@@ -861,13 +859,13 @@ const Profile: React.FC = () => {
                         {/* Action Buttons */}
                         <button
                           onClick={() => handleFarmEdit(farm.id)}
-                          className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+                          className="p-2 rounded-full text-gray-600 dark:text-gray-400"
                         >
                           <Edit2 className="w-4 h-4" strokeWidth={2} />
                         </button>
                         <button
                           onClick={() => handleFarmDelete(farm.id)}
-                          className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                          className="p-2 rounded-full text-gray-600 dark:text-gray-400"
                         >
                           <Trash2 className="w-4 h-4" strokeWidth={2} />
                         </button>
@@ -930,71 +928,129 @@ const Profile: React.FC = () => {
                             {t('farmDetails', { en: 'Farm Details', ml: 'ഫാം വിശദാംശങ്ങൾ' })}
                           </h5>
                           
-                          {/* Farm Size */}
-                          <div className="mb-4">
-                            <div className="flex items-center space-x-2">
-                              <Trees className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                              <span className="font-medium text-gray-700 dark:text-gray-300">
-                                {t('farmSize', { en: 'Size', ml: 'വലുപ്പം' })}
-                              </span>
-                              <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-medium">
-                                {farm.size.toFixed(2)} {t('acres', { en: 'acres', ml: 'ఏక్కర్' })}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            {/* Row 1 */}
-                            {/* Irrigation System */}
-                            <div className="flex items-start space-x-2">
-                              <Droplets className="w-4 h-4 text-cyan-600 dark:text-cyan-400 mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <span className="font-medium text-gray-700 dark:text-gray-300 text-xs">
-                                  {t('irrigation', { en: 'Irrigation', ml: 'ജലസേചനം' })}
+                          {/* Farm Details Grid - 4x2 Layout */}
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Row 1: Size + Terrain */}
+                            {/* Size */}
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Trees className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                  {t('farmSize', { en: 'Size', ml: 'വലുപ്പം' })}
                                 </span>
-                                <p className="text-gray-600 dark:text-gray-400 text-xs truncate">
-                                  {farm.irrigation_system || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
-                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-lg text-xs font-medium">
+                                  {farm.size.toFixed(2)} acres
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Terrain */}
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Layers className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                  {t('terrain', { en: 'Terrain', ml: 'ഭൂപ്രകൃതി' })}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg text-xs font-medium">
+                                  {farm.terrain_type || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Row 2: Climate + Soil Type */}
+                            {/* Climate */}
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Thermometer className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                  {t('climate', { en: 'Climate', ml: 'കാലാവസ്ഥ' })}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg text-xs font-medium">
+                                  {farm.climate_zone || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
+                                </span>
                               </div>
                             </div>
 
                             {/* Soil Type */}
-                            <div className="flex items-start space-x-2">
-                              <Mountain className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <span className="font-medium text-gray-700 dark:text-gray-300 text-xs">
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Mountain className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
                                   {t('soilType', { en: 'Soil Type', ml: 'മണ്ണിന്റെ തരം' })}
                                 </span>
-                                <p className="text-gray-600 dark:text-gray-400 text-xs truncate">
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-lg text-xs font-medium">
                                   {farm.soil_type || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
-                                </p>
+                                </span>
                               </div>
                             </div>
 
-                            {/* Row 2 */}
+                            {/* Row 3: Water Source + Irrigation */}
                             {/* Water Source */}
-                            <div className="flex items-start space-x-2">
-                              <Droplets className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <span className="font-medium text-gray-700 dark:text-gray-300 text-xs">
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Droplets className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
                                   {t('waterSource', { en: 'Water Source', ml: 'ജലസ്രോതസ്സ്' })}
                                 </span>
-                                <p className="text-gray-600 dark:text-gray-400 text-xs truncate">
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg text-xs font-medium">
                                   {farm.water_source || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
-                                </p>
+                                </span>
                               </div>
                             </div>
 
-                            {/* Organic Certification */}
-                            <div className="flex items-start space-x-2">
-                              <CheckCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${farm.organic_certified ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
-                              <div className="min-w-0">
-                                <span className="font-medium text-gray-700 dark:text-gray-300 text-xs">
-                                  {t('certification', { en: 'Certification', ml: 'സർട്ടിഫിക്കേഷൻ' })}
+                            {/* Irrigation */}
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Waves className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                  {t('irrigation', { en: 'Irrigation', ml: 'ജലസേചനം' })}
                                 </span>
-                                <p className={`text-xs truncate ${farm.organic_certified ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                                  {farm.organic_certified ? t('organic', { en: 'Organic', ml: 'ജൈവ' }) : t('notOrganic', { en: 'Not Organic', ml: 'ജൈവമല്ല' })}
-                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 rounded-lg text-xs font-medium">
+                                  {farm.irrigation_system || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Row 4: Fertilizer + Pest Control */}
+                            {/* Fertilizer */}
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Sprout className="w-4 h-4 text-lime-600 dark:text-lime-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                  {t('fertilizer', { en: 'Fertilizer', ml: 'വളം' })}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-300 rounded-lg text-xs font-medium">
+                                  {farm.fertilizer_type || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Pest Control */}
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Bug className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                  {t('pestControl', { en: 'Pest Control', ml: 'കീടനിയന്ത്രണം' })}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-lg text-xs font-medium">
+                                  {farm.pest_control || t('notSpecified', { en: 'Not specified', ml: 'വ്യക്തമാക്കിയിട്ടില്ല' })}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1013,7 +1069,7 @@ const Profile: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setShowAddFarm(true)}
-                    className="mt-3 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                    className="mt-3 px-4 py-2 bg-primary-500 text-white rounded-lg"
                   >
                     {t('addFirstFarm', { en: 'Add your first farm', ml: 'നിങ്ങളുടെ ആദ്യത്തെ ഫാം ചേർക്കുക' })}
                   </button>
@@ -1024,7 +1080,7 @@ const Profile: React.FC = () => {
 
           {/* Add Farm Modal */}
           {showAddFarm && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 overflow-y-auto" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 overflow-y-auto">
               <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 w-full max-w-lg shadow-2xl mx-4 my-4 max-h-[calc(100vh-200px)] overflow-y-auto modal-scroll">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
@@ -1032,14 +1088,14 @@ const Profile: React.FC = () => {
                   </h3>
                   <button
                     onClick={() => setShowAddFarm(false)}
-                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className="p-2 text-gray-500 dark:text-gray-400 rounded-lg"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 
                 <div className="space-y-4">
-                  {/* District and Area Selection */}
+                  {/* Row 1: District, Area */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
@@ -1047,10 +1103,8 @@ const Profile: React.FC = () => {
                       </label>
                       <select
                         value={newFarmData.district || ''}
-                        onChange={(e) => {
-                          setNewFarmData(prev => ({ ...prev, district: e.target.value, location: '' }))
-                        }}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, district: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
                         <option value="">{t('selectDistrict', { en: 'Select District', ml: 'ജില്ല തിരഞ്ഞെടുക്കുക' })}</option>
                         {KERALA_DISTRICTS.map((district) => (
@@ -1058,145 +1112,142 @@ const Profile: React.FC = () => {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                         {t('area', { en: 'Area', ml: 'പ്രദേശം' })}
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={newFarmData.location}
                         onChange={(e) => setNewFarmData(prev => ({ ...prev, location: e.target.value }))}
-                        disabled={!newFarmData.district}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="">{t('selectArea', { en: 'Select Area', ml: 'പ്രദേശം തിരഞ്ഞെടുക്കുക' })}</option>
-                        {newFarmData.district && getLocationsForDistrict(newFarmData.district).map((place) => (
-                          <option key={place} value={place}>{place}</option>
-                        ))}
-                      </select>
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                        placeholder={t('enterArea', { en: 'Enter area', ml: 'പ്രദേശം നൽകുക' })}
+                      />
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                      {t('farmSize', { en: 'Farm Size', ml: 'ഫാം വലുപ്പം' })}
-                    </label>
-                    <div className="space-y-3">
-                      {/* Display current value */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Size: (acres)</span>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => setNewFarmData(prev => ({ ...prev, size: Math.max(0, prev.size - 0.01) }))}
-                            className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors"
-                          >
-                            <span className="text-lg leading-none">−</span>
-                          </button>
-                          <span className="min-w-[60px] text-center font-mono text-lg text-gray-900 dark:text-text-primary">
-                            {newFarmData.size.toFixed(2)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setNewFarmData(prev => ({ ...prev, size: prev.size + 0.01 }))}
-                            className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors"
-                          >
-                            <span className="text-lg leading-none">+</span>
-                          </button>
-                        </div>
-                      </div>
-                      {/* Modern Glow Slider */}
-                      <div className="relative px-2">
-                        <div className="relative h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          {/* Progress track with glow */}
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-400 to-primary-500 rounded-full transition-all duration-300 ease-out"
-                            style={{ 
-                              width: `${(newFarmData.size / 100) * 100}%`,
-                              boxShadow: `0 0 20px ${(newFarmData.size / 100) * 0.8}px rgba(16, 185, 129, 0.6)`,
-                              filter: `brightness(${1 + (newFarmData.size / 100) * 0.3})`
-                            }}
-                          />
-                          {/* Input overlay */}
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={newFarmData.size}
-                            onChange={(e) => setNewFarmData(prev => ({ ...prev, size: parseFloat(e.target.value) }))}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 px-1">
-                          <span>0</span>
-                          <span>50</span>
-                          <span>100</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-3">
-                      {t('crops', { en: 'Crops', ml: 'വിളകൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
-                    </label>
-                    <textarea
-                      value={cropInput}
-                      onChange={(e) => setCropInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none"
-                      placeholder={t('cropsPlaceholder', { en: 'Enter crops separated by commas (e.g., Rice, Coconut, Banana)', ml: 'കോമയാൽ വേർതിരിച്ച് വിളകൾ നൽകുക' })}
-                      rows={3}
-                    />
-                    {validationErrors.crops && (
-                      <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                        <div className="text-sm text-red-700 dark:text-red-300">
-                          <strong>Invalid crops:</strong> {validationErrors.crops.join(', ')}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-3">
-                      {t('livestock', { en: 'Livestock', ml: 'കന്നുകാലികൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
-                    </label>
-                    <textarea
-                      value={livestockInput}
-                      onChange={(e) => setLivestockInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none"
-                      placeholder={t('livestockPlaceholder', { en: 'Enter livestock separated by commas (e.g., Jersey Cattle, Local Goats, Duck)', ml: 'കോമയാൽ വേർതിരിച്ച് കന്നുകാലികളെ നൽകുക' })}
-                      rows={3}
-                    />
-                    {validationErrors.livestock && (
-                      <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                        <div className="text-sm text-red-700 dark:text-red-300">
-                          <strong>Invalid livestock:</strong> {validationErrors.livestock.join(', ')}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Row 1: Irrigation System & Soil Type */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {/* Row 2: Size, Unit */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                        {t('irrigationSystem', { en: 'Irrigation System', ml: 'ജലസേചന സംവിധാനം' })}
+                        {t('farmSize', { en: 'Farm Size', ml: 'ഫാം വലുപ്പം' })}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newFarmData.size}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, size: parseFloat(e.target.value) || 0 }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                        placeholder="Enter size"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('unit', { en: 'Unit', ml: 'യൂണിറ്റ്' })}
                       </label>
                       <select
-                        value={newFarmData.irrigation_system}
-                        onChange={(e) => setNewFarmData(prev => ({ ...prev, irrigation_system: e.target.value }))}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        value={newFarmData.unit}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, unit: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
-                        <option value="">{t('selectIrrigation', { en: 'Select Irrigation System', ml: 'ജലസേചന സംവിധാനം തിരഞ്ഞെടുക്കുക' })}</option>
-                        <option value="Drip Irrigation">{t('dripIrrigation', { en: 'Drip Irrigation', ml: 'ഡ്രിപ് ജലസേചനം' })}</option>
-                        <option value="Sprinkler Irrigation">{t('sprinklerIrrigation', { en: 'Sprinkler Irrigation', ml: 'സ്പ്രിങ്ക്ലർ ജലസേചനം' })}</option>
-                        <option value="Flood Irrigation">{t('floodIrrigation', { en: 'Flood Irrigation', ml: 'വെള്ളപ്പൊക്ക ജലസേചനം' })}</option>
-                        <option value="Rain Fed">{t('rainFed', { en: 'Rain Fed', ml: 'മഴ നിർഭര' })}</option>
-                        <option value="Manual Watering">{t('manualWatering', { en: 'Manual Watering', ml: 'കൈകൊണ്ട് നനയ്ക്കൽ' })}</option>
+                        <option value="acres">Acres</option>
+                        <option value="hectares">Hectares</option>
+                        <option value="cents">Cents</option>
+                        <option value="sq_feet">Sq Feet</option>
+                        <option value="sq_meters">Sq Meters</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Row 3: Crops, Livestock - Stacked Layout for better mobile UX */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('crops', { en: 'Crops', ml: 'വിളകൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
+                      </label>
+                      <textarea
+                        value={cropInput}
+                        onChange={(e) => setCropInput(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none min-h-[100px]"
+                        placeholder="Rice, Wheat, Coconut"
+                        rows={4}
+                      />
+                      {validationErrors.crops && (
+                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                          <div className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Invalid crops:</strong> {validationErrors.crops.join(', ')}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('livestock', { en: 'Livestock', ml: 'കന്നുകാലികൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
+                      </label>
+                      <textarea
+                        value={livestockInput}
+                        onChange={(e) => setLivestockInput(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none min-h-[100px]"
+                           placeholder="Cows, Goats, Chickens"
+                        rows={4}
+                      />
+                      {validationErrors.livestock && (
+                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                          <div className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Invalid livestock:</strong> {validationErrors.livestock.join(', ')}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row 4: Terrain Type, Climate Zone */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('terrainType', { en: 'Terrain Type', ml: 'ഭൂപ്രകൃതി തരം' })}
+                      </label>
+                      <select
+                        value={newFarmData.terrain_type}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, terrain_type: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectTerrain', { en: 'Select Terrain', ml: 'ഭൂപ്രകൃതി തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="Plain">{t('plain', { en: 'Plain', ml: 'സമതലം' })}</option>
+                        <option value="Hilly">{t('hilly', { en: 'Hilly', ml: 'മലയോര' })}</option>
+                        <option value="Mountainous">{t('mountainous', { en: 'Mountainous', ml: 'പർവതീയ' })}</option>
+                        <option value="Coastal">{t('coastal', { en: 'Coastal', ml: 'തീരദേശം' })}</option>
+                        <option value="Valley">{t('valley', { en: 'Valley', ml: 'താഴ്വര' })}</option>
+                        <option value="Plateau">{t('plateau', { en: 'Plateau', ml: 'പീഠഭൂമി' })}</option>
                       </select>
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('climateZone', { en: 'Climate Zone', ml: 'കാലാവസ്ഥാ മേഖല' })}
+                      </label>
+                      <select
+                        value={newFarmData.climate_zone}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, climate_zone: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectClimate', { en: 'Select Climate', ml: 'കാലാവസ്ഥാ മേഖല തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="Tropical">{t('tropical', { en: 'Tropical', ml: 'ഉഷ്ണമേഖലാ' })}</option>
+                        <option value="Sub-tropical">{t('subtropical', { en: 'Sub-tropical', ml: 'ഉപ-ഉഷ്ണമേഖലാ' })}</option>
+                        <option value="Temperate">{t('temperate', { en: 'Temperate', ml: 'മിതോഷ്ണ' })}</option>
+                        <option value="Arid">{t('arid', { en: 'Arid', ml: 'വരണ്ട' })}</option>
+                        <option value="Semi-arid">{t('semiarid', { en: 'Semi-arid', ml: 'അർദ്ധ വരണ്ട' })}</option>
+                        <option value="Humid">{t('humid', { en: 'Humid', ml: 'ഈർപ്പമുള്ള' })}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Row 5: Soil Type, Water Source */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                         {t('soilType', { en: 'Soil Type', ml: 'മണ്ണിന്റെ തരം' })}
@@ -1204,21 +1255,19 @@ const Profile: React.FC = () => {
                       <select
                         value={newFarmData.soil_type}
                         onChange={(e) => setNewFarmData(prev => ({ ...prev, soil_type: e.target.value }))}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
                         <option value="">{t('selectSoilType', { en: 'Select Soil Type', ml: 'മണ്ണിന്റെ തരം തിരഞ്ഞെടുക്കുക' })}</option>
-                        <option value="Loamy Soil">{t('loamySoil', { en: 'Loamy Soil', ml: 'കളിമണ്ണ്' })}</option>
-                        <option value="Clay Soil">{t('claySoil', { en: 'Clay Soil', ml: 'കളിമൺ' })}</option>
-                        <option value="Sandy Soil">{t('sandySoil', { en: 'Sandy Soil', ml: 'മണൽമണ്ണ്' })}</option>
-                        <option value="Silt Soil">{t('siltSoil', { en: 'Silt Soil', ml: 'സിൽറ്റ് മണ്ണ്' })}</option>
-                        <option value="Red Soil">{t('redSoil', { en: 'Red Soil', ml: 'ചുവന്ന മണ്ണ്' })}</option>
-                        <option value="Black Soil">{t('blackSoil', { en: 'Black Soil', ml: 'കറുത്ത മണ്ണ്' })}</option>
+                        <option value="Loamy">{t('loamySoil', { en: 'Loamy Soil', ml: 'ലോമി മണ്ണ്' })}</option>
+                        <option value="Clay">{t('claySoil', { en: 'Clay Soil', ml: 'ക്ലേ മണ്ണ്' })}</option>
+                        <option value="Sandy">{t('sandySoil', { en: 'Sandy Soil', ml: 'മണൽ മണ്ണ്' })}</option>
+                        <option value="Laterite">{t('lateriteSoil', { en: 'Laterite Soil', ml: 'ലാറ്ററൈറ്റ് മണ്ണ്' })}</option>
+                        <option value="Alluvial">{t('alluvialSoil', { en: 'Alluvial Soil', ml: 'അല്യൂവിയൽ മണ്ണ്' })}</option>
+                        <option value="Black">{t('blackSoil', { en: 'Black Soil', ml: 'കറുത്ത മണ്ണ്' })}</option>
+                        <option value="Red">{t('redSoil', { en: 'Red Soil', ml: 'ചുവപ്പ് മണ്ണ്' })}</option>
                       </select>
                     </div>
-                  </div>
 
-                  {/* Row 2: Water Source & Organic Certification */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                         {t('waterSource', { en: 'Water Source', ml: 'ജലസ്രോതസ്സ്' })}
@@ -1226,9 +1275,10 @@ const Profile: React.FC = () => {
                       <select
                         value={newFarmData.water_source}
                         onChange={(e) => setNewFarmData(prev => ({ ...prev, water_source: e.target.value }))}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
                         <option value="">{t('selectWaterSource', { en: 'Select Water Source', ml: 'ജലസ്രോതസ്സ് തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="N.A.">{t('notApplicable', { en: 'N.A.', ml: 'ബാധകമല്ല' })}</option>
                         <option value="Borewell">{t('borewell', { en: 'Borewell', ml: 'ബോർവെൽ' })}</option>
                         <option value="Well">{t('well', { en: 'Well', ml: 'കിണർ' })}</option>
                         <option value="River">{t('river', { en: 'River', ml: 'നദി' })}</option>
@@ -1237,20 +1287,69 @@ const Profile: React.FC = () => {
                         <option value="Rainwater">{t('rainwater', { en: 'Rainwater', ml: 'മഴവെള്ളം' })}</option>
                       </select>
                     </div>
+                  </div>
 
+                  {/* Row 6: Irrigation, Fertilizer */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                        {t('organicCertified', { en: 'Organic Certification', ml: 'ജൈവ സർട്ടിഫിക്കേഷൻ' })}
+                        {t('irrigationSystem', { en: 'Irrigation System', ml: 'ജലസേചന സംവിധാനം' })}
                       </label>
                       <select
-                        value={newFarmData.organic_certified.toString()}
-                        onChange={(e) => setNewFarmData(prev => ({ ...prev, organic_certified: e.target.value === 'true' }))}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        value={newFarmData.irrigation_system}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, irrigation_system: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
-                        <option value="false">{t('no', { en: 'No', ml: 'ഇല്ല' })}</option>
-                        <option value="true">{t('yes', { en: 'Yes', ml: 'ഉണ്ട്' })}</option>
+                        <option value="">{t('selectIrrigation', { en: 'Select Irrigation', ml: 'ജലസേചനം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="Drip Irrigation">{t('dripIrrigation', { en: 'Drip Irrigation', ml: 'ഡ്രിപ് ജലസേചനം' })}</option>
+                        <option value="Sprinkler Irrigation">{t('sprinklerIrrigation', { en: 'Sprinkler Irrigation', ml: 'സ്പ്രിങ്ക്ലർ ജലസേചനം' })}</option>
+                        <option value="Flood Irrigation">{t('floodIrrigation', { en: 'Flood Irrigation', ml: 'വെള്ളപ്പൊക്ക ജലസേചനം' })}</option>
+                        <option value="Rain Fed">{t('rainFed', { en: 'Rain Fed', ml: 'മഴ നിർഭര' })}</option>
+                        <option value="Manual Watering">{t('manualWatering', { en: 'Manual Watering', ml: 'കൈകൊണ്ട് നനയ്ക്കൽ' })}</option>
                       </select>
                     </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('fertilizerType', { en: 'Fertilizer Type', ml: 'വളത്തിന്റെ തരം' })}
+                      </label>
+                      <select
+                        value={newFarmData.fertilizer_type}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, fertilizer_type: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectFertilizer', { en: 'Select Fertilizer', ml: 'വളം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="Organic Manure">{t('organicManure', { en: 'Organic Manure', ml: 'ജൈവ വളം' })}</option>
+                        <option value="Chemical Fertilizer">{t('chemicalFertilizer', { en: 'Chemical Fertilizer', ml: 'രാസവളം' })}</option>
+                        <option value="Bio-fertilizer">{t('biofertilizer', { en: 'Bio-fertilizer', ml: 'ജൈവ രാസവളം' })}</option>
+                        <option value="Compost">{t('compost', { en: 'Compost', ml: 'കമ്പോസ്റ്റ്' })}</option>
+                        <option value="Vermicompost">{t('vermicompost', { en: 'Vermicompost', ml: 'വേം കമ്പോസ്റ്റ്' })}</option>
+                        <option value="NPK Fertilizer">{t('npkFertilizer', { en: 'NPK Fertilizer', ml: 'എൻപികെ വളം' })}</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Row 7: Pest Control (with blank space) */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('pestControl', { en: 'Pest Control Method', ml: 'കീടനിയന്ത്രണ രീതി' })}
+                      </label>
+                      <select
+                        value={newFarmData.pest_control}
+                        onChange={(e) => setNewFarmData(prev => ({ ...prev, pest_control: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectPestControl', { en: 'Select Pest Control', ml: 'കീടനിയന്ത്രണം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="Organic Pesticides">{t('organicPesticides', { en: 'Organic Pesticides', ml: 'ജൈവ കീടനാശിനി' })}</option>
+                        <option value="Chemical Pesticides">{t('chemicalPesticides', { en: 'Chemical Pesticides', ml: 'രാസ കീടനാശിനി' })}</option>
+                        <option value="Integrated Pest Management">{t('ipm', { en: 'Integrated Pest Management', ml: 'സംയോജിത കീടനിയന്ത്രണം' })}</option>
+                        <option value="Biological Control">{t('biologicalControl', { en: 'Biological Control', ml: 'ജൈവിക നിയന്ത്രണം' })}</option>
+                        <option value="Natural Predators">{t('naturalPredators', { en: 'Natural Predators', ml: 'പ്രകൃതിദത്ത ശത്രുക്കൾ' })}</option>
+                        <option value="Neem-based">{t('neemBased', { en: 'Neem-based', ml: 'വേപ്പ് അധിഷ്ഠിത' })}</option>
+                      </select>
+                    </div>
+                    <div></div>
                   </div>
                 </div>
                 
@@ -1258,7 +1357,7 @@ const Profile: React.FC = () => {
                 <div className="flex items-center justify-end space-x-3 mt-6">
                   <button
                     onClick={() => setShowAddFarm(false)}
-                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors"
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium"
                   >
                     {t('cancel', { en: 'Cancel', ml: 'റദ്ദാക്കുക' })}
                   </button>
@@ -1277,7 +1376,7 @@ const Profile: React.FC = () => {
 
           {/* Edit Farm Modal */}
           {showEditFarm && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 overflow-y-auto" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 overflow-y-auto">
               <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 w-full max-w-lg shadow-2xl mx-4 my-4 max-h-[calc(100vh-200px)] overflow-y-auto modal-scroll">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
@@ -1292,7 +1391,7 @@ const Profile: React.FC = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {/* District and Area Selection */}
+                  {/* Row 1: District, Area */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
@@ -1300,10 +1399,8 @@ const Profile: React.FC = () => {
                       </label>
                       <select
                         value={editFarmData.district || ''}
-                        onChange={(e) => {
-                          setEditFarmData({...editFarmData, district: e.target.value, location: ''})
-                        }}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        onChange={(e) => setEditFarmData({ ...editFarmData, district: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
                         <option value="">{t('selectDistrict', { en: 'Select District', ml: 'ജില്ല തിരഞ്ഞെടുക്കുക' })}</option>
                         {KERALA_DISTRICTS.map((district) => (
@@ -1311,136 +1408,197 @@ const Profile: React.FC = () => {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                         {t('area', { en: 'Area', ml: 'പ്രദേശം' })}
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={editFarmData.location}
-                        onChange={(e) => setEditFarmData({...editFarmData, location: e.target.value})}
-                        disabled={!editFarmData.district}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onChange={(e) => setEditFarmData({ ...editFarmData, location: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                        placeholder={t('enterArea', { en: 'Enter area', ml: 'പ്രദേശം നൽകുക' })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Size, Unit */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('farmSize', { en: 'Farm Size', ml: 'ഫാം വലുപ്പം' })}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={editFarmData.size}
+                        onChange={(e) => setEditFarmData({...editFarmData, size: parseFloat(e.target.value) || 0})}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                        placeholder="Enter size"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('unit', { en: 'Unit', ml: 'യൂണിറ്റ്' })}
+                      </label>
+                      <select
+                        value={editFarmData.unit}
+                        onChange={(e) => setEditFarmData({...editFarmData, unit: e.target.value})}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
-                        <option value="">{t('selectArea', { en: 'Select Area', ml: 'പ്രദേശം തിരഞ്ഞെടുക്കുക' })}</option>
-                        {editFarmData.district && getLocationsForDistrict(editFarmData.district).map((place) => (
-                          <option key={place} value={place}>{place}</option>
-                        ))}
+                        <option value="acres">Acres</option>
+                        <option value="hectares">Hectares</option>
+                        <option value="cents">Cents</option>
+                        <option value="sq_feet">Sq Feet</option>
+                        <option value="sq_meters">Sq Meters</option>
                       </select>
                     </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                      {t('farmSize', { en: 'Farm Size', ml: 'ഫാം വലുപ്പം' })}
-                    </label>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Size: (acres)</span>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => setEditFarmData({...editFarmData, size: Math.max(0, editFarmData.size - 0.01)})}
-                            className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors"
-                          >
-                            <span className="text-lg leading-none">−</span>
-                          </button>
-                          <span className="min-w-[60px] text-center font-mono text-lg text-gray-900 dark:text-text-primary">
-                            {editFarmData.size.toFixed(2)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setEditFarmData({...editFarmData, size: editFarmData.size + 0.01})}
-                            className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors"
-                          >
-                            <span className="text-lg leading-none">+</span>
-                          </button>
+                  {/* Row 3: Crops, Livestock - Stacked Layout for better mobile UX */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('crops', { en: 'Crops', ml: 'വിളകൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
+                      </label>
+                      <textarea
+                        value={editCropInput}
+                        onChange={(e) => setEditCropInput(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none min-h-[100px]"
+                        placeholder="Rice, Wheat, Coconut"
+                        rows={4}
+                      />
+                      {validationErrors.crops && (
+                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                          <div className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Invalid crops:</strong> {validationErrors.crops.join(', ')}
+                          </div>
                         </div>
-                      </div>
-                      {/* Modern Glow Slider */}
-                      <div className="relative px-2">
-                        <div className="relative h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          {/* Progress track with glow */}
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-400 to-primary-500 rounded-full transition-all duration-300 ease-out"
-                            style={{ 
-                              width: `${(editFarmData.size / 100) * 100}%`,
-                              boxShadow: `0 0 20px ${(editFarmData.size / 100) * 0.8}px rgba(16, 185, 129, 0.6)`,
-                              filter: `brightness(${1 + (editFarmData.size / 100) * 0.3})`
-                            }}
-                          />
-                          {/* Input overlay */}
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={editFarmData.size}
-                            onChange={(e) => setEditFarmData({...editFarmData, size: parseFloat(e.target.value)})}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('livestock', { en: 'Livestock', ml: 'കന്നുകാലികൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
+                      </label>
+                      <textarea
+                        value={editLivestockInput}
+                        onChange={(e) => setEditLivestockInput(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none min-h-[100px]"
+                        placeholder="Cows, Goats, Chickens"
+                        rows={4}
+                      />
+                      {validationErrors.livestock && (
+                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                          <div className="text-sm text-red-700 dark:text-red-300">
+                            <strong>Invalid livestock:</strong> {validationErrors.livestock.join(', ')}
+                          </div>
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 px-1">
-                          <span>0</span>
-                          <span>50</span>
-                          <span>100</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-3">
-                      {t('crops', { en: 'Crops', ml: 'വിളകൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
-                    </label>
-                    <textarea
-                      value={editCropInput}
-                      onChange={(e) => setEditCropInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none"
-                      placeholder={t('cropsPlaceholder', { en: 'Enter crops separated by commas (e.g., Rice, Coconut, Banana)', ml: 'കോമയാൽ വേർതിരിച്ച് വിളകൾ നൽകുക' })}
-                      rows={3}
-                    />
-                    {validationErrors.crops && (
-                      <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                        <div className="text-sm text-red-700 dark:text-red-300">
-                          <strong>Invalid crops:</strong> {validationErrors.crops.join(', ')}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-3">
-                      {t('livestock', { en: 'Livestock', ml: 'കന്നുകാലികൾ' })} <span className="text-xs text-gray-500">(comma separated)</span>
-                    </label>
-                    <textarea
-                      value={editLivestockInput}
-                      onChange={(e) => setEditLivestockInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-none"
-                      placeholder={t('livestockPlaceholder', { en: 'Enter livestock separated by commas (e.g., Jersey Cattle, Local Goats, Duck)', ml: 'കോമയാൽ വേർതിരിച്ച് കന്നുകാലികളെ നൽകുക' })}
-                      rows={3}
-                    />
-                    {validationErrors.livestock && (
-                      <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                        <div className="text-sm text-red-700 dark:text-red-300">
-                          <strong>Invalid livestock:</strong> {validationErrors.livestock.join(', ')}
-                        </div>
-                      </div>
-                    )}
+
+                  {/* Row 4: Terrain Type, Climate Zone */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('terrainType', { en: 'Terrain Type', ml: 'ഭൂപ്രകൃതി തരം' })}
+                      </label>
+                      <select
+                        value={editFarmData.terrain_type}
+                        onChange={(e) => setEditFarmData({ ...editFarmData, terrain_type: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectTerrain', { en: 'Select Terrain Type', ml: 'ഭൂപ്രകൃതി തരം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="N.A.">{t('notApplicable', { en: 'N.A.', ml: 'ബാധകമല്ല' })}</option>
+                        <option value="Plain">{t('plain', { en: 'Plain', ml: 'സമതലം' })}</option>
+                        <option value="Hilly">{t('hilly', { en: 'Hilly', ml: 'മലയോര' })}</option>
+                        <option value="Mountainous">{t('mountainous', { en: 'Mountainous', ml: 'പർവതീയ' })}</option>
+                        <option value="Coastal">{t('coastal', { en: 'Coastal', ml: 'തീരദേശം' })}</option>
+                        <option value="Valley">{t('valley', { en: 'Valley', ml: 'താഴ്വര' })}</option>
+                        <option value="Plateau">{t('plateau', { en: 'Plateau', ml: 'പീഠഭൂമി' })}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('climateZone', { en: 'Climate Zone', ml: 'കാലാവസ്ഥാ മേഖല' })}
+                      </label>
+                      <select
+                        value={editFarmData.climate_zone}
+                        onChange={(e) => setEditFarmData({ ...editFarmData, climate_zone: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectClimate', { en: 'Select Climate Zone', ml: 'കാലാവസ്ഥാ മേഖല തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="N.A.">{t('notApplicable', { en: 'N.A.', ml: 'ബാധകമല്ല' })}</option>
+                        <option value="Tropical">{t('tropical', { en: 'Tropical', ml: 'ഉഷ്ണമേഖലാ' })}</option>
+                        <option value="Sub-tropical">{t('subtropical', { en: 'Sub-tropical', ml: 'ഉപ-ഉഷ്ണമേഖലാ' })}</option>
+                        <option value="Temperate">{t('temperate', { en: 'Temperate', ml: 'മിതോഷ്ണ' })}</option>
+                        <option value="Arid">{t('arid', { en: 'Arid', ml: 'വരണ്ട' })}</option>
+                        <option value="Semi-arid">{t('semiarid', { en: 'Semi-arid', ml: 'അർദ്ധ വരണ്ട' })}</option>
+                        <option value="Humid">{t('humid', { en: 'Humid', ml: 'ഈർപ്പമുള്ള' })}</option>
+                      </select>
+                    </div>
                   </div>
 
-                  {/* Row 1: Irrigation System & Soil Type */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {/* Row 5: Soil Type, Water Source */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('soilType', { en: 'Soil Type', ml: 'മണ്ണിന്റെ തരം' })}
+                      </label>
+                      <select
+                        value={editFarmData.soil_type}
+                        onChange={(e) => setEditFarmData({ ...editFarmData, soil_type: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectSoilType', { en: 'Select Soil Type', ml: 'മണ്ണിന്റെ തരം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="Loamy">{t('loamySoil', { en: 'Loamy Soil', ml: 'ലോമി മണ്ണ്' })}</option>
+                        <option value="Clay">{t('claySoil', { en: 'Clay Soil', ml: 'ക്ലേ മണ്ണ്' })}</option>
+                        <option value="Sandy">{t('sandySoil', { en: 'Sandy Soil', ml: 'മണൽ മണ്ണ്' })}</option>
+                        <option value="Laterite">{t('lateriteSoil', { en: 'Laterite Soil', ml: 'ലാറ്ററൈറ്റ് മണ്ണ്' })}</option>
+                        <option value="Alluvial">{t('alluvialSoil', { en: 'Alluvial Soil', ml: 'അല്യൂവിയൽ മണ്ണ്' })}</option>
+                        <option value="Black">{t('blackSoil', { en: 'Black Soil', ml: 'കറുത്ത മണ്ണ്' })}</option>
+                        <option value="Red">{t('redSoil', { en: 'Red Soil', ml: 'ചുവപ്പ് മണ്ണ്' })}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                        {t('waterSource', { en: 'Water Source', ml: 'ജലസ്രോതസ്സ്' })}
+                      </label>
+                      <select
+                        value={editFarmData.water_source}
+                        onChange={(e) => setEditFarmData({ ...editFarmData, water_source: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+                      >
+                        <option value="">{t('selectWaterSource', { en: 'Select Water Source', ml: 'ജലസ്രോതസ്സ് തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="N.A.">{t('notApplicable', { en: 'N.A.', ml: 'ബാധകമല്ല' })}</option>
+                        <option value="Borewell">{t('borewell', { en: 'Borewell', ml: 'ബോർവെൽ' })}</option>
+                        <option value="Well">{t('well', { en: 'Well', ml: 'കിണർ' })}</option>
+                        <option value="River">{t('river', { en: 'River', ml: 'നദി' })}</option>
+                        <option value="Pond">{t('pond', { en: 'Pond', ml: 'കുളം' })}</option>
+                        <option value="Canal">{t('canal', { en: 'Canal', ml: 'കനാൽ' })}</option>
+                        <option value="Rainwater">{t('rainwater', { en: 'Rainwater', ml: 'മഴവെള്ളം' })}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Row 6: Irrigation, Fertilizer */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                         {t('irrigationSystem', { en: 'Irrigation System', ml: 'ജലസേചന സംവിധാനം' })}
                       </label>
                       <select
                         value={editFarmData.irrigation_system}
-                        onChange={(e) => setEditFarmData({...editFarmData, irrigation_system: e.target.value})}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        onChange={(e) => setEditFarmData({ ...editFarmData, irrigation_system: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
-                        <option value="">{t('selectIrrigation', { en: 'Select Irrigation System', ml: 'ജലസേചന സംവിധാനം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="">{t('selectIrrigation', { en: 'Select Irrigation', ml: 'ജലസേചനം തിരഞ്ഞെടുക്കുക' })}</option>
                         <option value="Drip Irrigation">{t('dripIrrigation', { en: 'Drip Irrigation', ml: 'ഡ്രിപ് ജലസേചനം' })}</option>
                         <option value="Sprinkler Irrigation">{t('sprinklerIrrigation', { en: 'Sprinkler Irrigation', ml: 'സ്പ്രിങ്ക്ലർ ജലസേചനം' })}</option>
                         <option value="Flood Irrigation">{t('floodIrrigation', { en: 'Flood Irrigation', ml: 'വെള്ളപ്പൊക്ക ജലസേചനം' })}</option>
@@ -1451,58 +1609,48 @@ const Profile: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                        {t('soilType', { en: 'Soil Type', ml: 'മണ്ണിന്റെ തരം' })}
+                        {t('fertilizerType', { en: 'Fertilizer Type', ml: 'വളത്തിന്റെ തരം' })}
                       </label>
                       <select
-                        value={editFarmData.soil_type}
-                        onChange={(e) => setEditFarmData({...editFarmData, soil_type: e.target.value})}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        value={editFarmData.fertilizer_type}
+                        onChange={(e) => setEditFarmData({ ...editFarmData, fertilizer_type: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
-                        <option value="">{t('selectSoilType', { en: 'Select Soil Type', ml: 'മണ്ണിന്റെ തരം തിരഞ്ഞെടുക്കുക' })}</option>
-                        <option value="Loamy Soil">{t('loamySoil', { en: 'Loamy Soil', ml: 'കളിമണ്ണ്' })}</option>
-                        <option value="Clay Soil">{t('claySoil', { en: 'Clay Soil', ml: 'കളിമൺ' })}</option>
-                        <option value="Sandy Soil">{t('sandySoil', { en: 'Sandy Soil', ml: 'മണൽമണ്ണ്' })}</option>
-                        <option value="Silt Soil">{t('siltSoil', { en: 'Silt Soil', ml: 'സിൽറ്റ് മണ്ണ്' })}</option>
-                        <option value="Red Soil">{t('redSoil', { en: 'Red Soil', ml: 'ചുവന്ന മണ്ണ്' })}</option>
-                        <option value="Black Soil">{t('blackSoil', { en: 'Black Soil', ml: 'കറുത്ത മണ്ണ്' })}</option>
+                        <option value="">{t('selectFertilizer', { en: 'Select Fertilizer Type', ml: 'വളത്തിന്റെ തരം തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="N.A.">{t('notApplicable', { en: 'N.A.', ml: 'ബാധകമല്ല' })}</option>
+                        <option value="Organic Manure">{t('organicManure', { en: 'Organic Manure', ml: 'ജൈവ വളം' })}</option>
+                        <option value="Chemical Fertilizer">{t('chemicalFertilizer', { en: 'Chemical Fertilizer', ml: 'രാസവളം' })}</option>
+                        <option value="Bio-fertilizer">{t('biofertilizer', { en: 'Bio-fertilizer', ml: 'ജൈവ രാസവളം' })}</option>
+                        <option value="Compost">{t('compost', { en: 'Compost', ml: 'കമ്പോസ്റ്റ്' })}</option>
+                        <option value="Vermicompost">{t('vermicompost', { en: 'Vermicompost', ml: 'വേം കമ്പോസ്റ്റ്' })}</option>
+                        <option value="NPK Fertilizer">{t('npkFertilizer', { en: 'NPK Fertilizer', ml: 'എൻപികെ വളം' })}</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* Row 2: Water Source & Organic Certification */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {/* Row 7: Pest Control (with blank space) */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                        {t('waterSource', { en: 'Water Source', ml: 'ജലസ്രോതസ്സ്' })}
+                        {t('pestControl', { en: 'Pest Control Method', ml: 'കീടനിയന്ത്രണ രീതി' })}
                       </label>
                       <select
-                        value={editFarmData.water_source}
-                        onChange={(e) => setEditFarmData({...editFarmData, water_source: e.target.value})}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
+                        value={editFarmData.pest_control}
+                        onChange={(e) => setEditFarmData({ ...editFarmData, pest_control: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
                       >
-                        <option value="">{t('selectWaterSource', { en: 'Select Water Source', ml: 'ജലസ്രോതസ്സ് തിരഞ്ഞെടുക്കുക' })}</option>
-                        <option value="Borewell">{t('borewell', { en: 'Borewell', ml: 'ബോർവെൽ' })}</option>
-                        <option value="Well">{t('well', { en: 'Well', ml: 'കിണർ' })}</option>
-                        <option value="River">{t('river', { en: 'River', ml: 'നദി' })}</option>
-                        <option value="Pond">{t('pond', { en: 'Pond', ml: 'കുളം' })}</option>
-                        <option value="Canal">{t('canal', { en: 'Canal', ml: 'കനാൽ' })}</option>
-                        <option value="Rainwater">{t('rainwater', { en: 'Rainwater', ml: 'മഴവെള്ളം' })}</option>
+                        <option value="">{t('selectPestControl', { en: 'Select Pest Control Method', ml: 'കീടനിയന്ത്രണ രീതി തിരഞ്ഞെടുക്കുക' })}</option>
+                        <option value="N.A.">{t('notApplicable', { en: 'N.A.', ml: 'ബാധകമല്ല' })}</option>
+                        <option value="Organic Pesticides">{t('organicPesticides', { en: 'Organic Pesticides', ml: 'ജൈവ കീടനാശിനി' })}</option>
+                        <option value="Chemical Pesticides">{t('chemicalPesticides', { en: 'Chemical Pesticides', ml: 'രാസ കീടനാശിനി' })}</option>
+                        <option value="Integrated Pest Management">{t('ipm', { en: 'Integrated Pest Management', ml: 'സംയോജിത കീടനിയന്ത്രണം' })}</option>
+                        <option value="Biological Control">{t('biologicalControl', { en: 'Biological Control', ml: 'ജൈവിക നിയന്ത്രണം' })}</option>
+                        <option value="Natural Predators">{t('naturalPredators', { en: 'Natural Predators', ml: 'പ്രകൃതിദത്ത ശത്രുക്കൾ' })}</option>
+                        <option value="Neem-based">{t('neemBased', { en: 'Neem-based', ml: 'വേപ്പ് അധിഷ്ഠിത' })}</option>
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
-                        {t('organicCertified', { en: 'Organic Certification', ml: 'ജൈവ സർട്ടിഫിക്കേഷൻ' })}
-                      </label>
-                      <select
-                        value={editFarmData.organic_certified.toString()}
-                        onChange={(e) => setEditFarmData({...editFarmData, organic_certified: e.target.value === 'true'})}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzA4RCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K')] bg-no-repeat bg-[position:right_12px_center] pr-10"
-                      >
-                        <option value="false">{t('no', { en: 'No', ml: 'ഇല്ല' })}</option>
-                        <option value="true">{t('yes', { en: 'Yes', ml: 'ഉണ്ട്' })}</option>
-                      </select>
-                    </div>
+                    <div></div>
                   </div>
                 </div>
                 

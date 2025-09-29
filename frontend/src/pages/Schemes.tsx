@@ -181,10 +181,10 @@ const Schemes: React.FC = () => {
 
         {/* Current Season AI Recommendations */}
         {defaultRecommendations.length > 0 && (
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-dark/60 dark:to-surface-dark/50 rounded-2xl p-6 shadow-card border border-primary-200 dark:border-primary-900">
+          <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-dark/60 dark:to-surface-dark/50 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-900">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-primary-400 rounded-xl flex items-center justify-center mr-3">
+                <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center mr-3">
                   <Star className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
@@ -212,12 +212,12 @@ const Schemes: React.FC = () => {
                 return (
                   <div 
                     key={scheme.id} 
-                    className="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-card hover:shadow-elevated transition-all duration-400 hover:-translate-y-0.5 border border-gray-200 dark:border-gray-700"
+                    className="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 border-2 border-gray-200 dark:border-gray-700 transition-all duration-400"
                     onClick={() => window.open(scheme.officialLink, '_blank')}
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="p-2 bg-primary-100 dark:bg-primary-800 rounded-lg">
-                        <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                      <div className="p-2 bg-primary-500 rounded-lg">
+                        <Icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-2">
@@ -273,11 +273,11 @@ const Schemes: React.FC = () => {
                 return (
                   <div 
                     key={scheme.id} 
-                    className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300"
+                    className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 transition-all duration-300"
                     onClick={() => window.open(scheme.officialLink, '_blank')}
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                      <div className="p-2 bg-purple-500 rounded-lg">
                         <Icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div className="flex-1">
@@ -340,8 +340,8 @@ const Schemes: React.FC = () => {
               onClick={() => setShowSearch(!showSearch)}
               className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${
                 showSearch 
-                  ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
               }`}
               aria-label={t('search', { en: 'Search', ml: 'തിരയുക' })}
             >
@@ -353,8 +353,8 @@ const Schemes: React.FC = () => {
               onClick={() => setShowFilter(!showFilter)}
               className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${
                 showFilter
-                  ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
               }`}
               aria-label={t('filter', { en: 'Filter', ml: 'ഫിൽട്ടർ' })}
             >
@@ -410,12 +410,12 @@ const Schemes: React.FC = () => {
                 return (
                   <div 
                     key={scheme.id} 
-                    className="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-card hover:shadow-elevated transition-all duration-400 hover:-translate-y-0.5 border border-gray-200 dark:border-gray-700 active:scale-98"
+                    className="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 border-2 border-gray-200 dark:border-gray-700 transition-all duration-400 active:scale-98"
                     onClick={() => setSelectedScheme(scheme)}
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                        <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      <div className="p-2 bg-blue-500 rounded-lg">
+                        <Icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-2">
@@ -429,7 +429,7 @@ const Schemes: React.FC = () => {
                                   e.stopPropagation()
                                   window.open(scheme.officialLink, '_blank')
                                 }}
-                                className="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900 rounded-full transition-colors"
+                                className="p-1 text-green-600 dark:text-green-400 rounded-full transition-colors"
                               >
                                 <ExternalLink className="w-4 h-4" />
                               </button>
@@ -478,7 +478,7 @@ const Schemes: React.FC = () => {
                 </h3>
                 <button
                   onClick={() => setShowRecommendationForm(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -575,7 +575,7 @@ const Schemes: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowRecommendationForm(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 transition-colors text-sm font-medium"
                 >
                   {t('cancel', { en: 'Cancel', ml: 'റദ്ദാക്കുക' })}
                 </button>
@@ -619,7 +619,7 @@ const Schemes: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setSelectedScheme(null)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -694,7 +694,7 @@ const Schemes: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setSelectedScheme(null)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 transition-colors text-sm font-medium"
                 >
                   {t('close', { en: 'Close', ml: 'അടയ്ക്കുക' })}
                 </button>

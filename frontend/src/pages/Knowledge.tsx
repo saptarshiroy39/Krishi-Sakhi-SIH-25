@@ -270,8 +270,8 @@ const Knowledge: React.FC = () => {
                 onClick={() => setShowSearch(!showSearch)}
                 className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${
                   showSearch 
-                    ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    ? 'bg-primary-500 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                 }`}
                 aria-label={t('search', { en: 'Search', ml: 'തിരയുക' })}
               >
@@ -299,7 +299,7 @@ const Knowledge: React.FC = () => {
 
           {/* 24-Hour Weather Forecast */}
           {filteredContent.showWeather && (
-          <div id="weather-forecast" className="bg-gradient-to-br from-sky-50 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 rounded-2xl p-6 border border-sky-200 dark:border-sky-800 shadow-card">
+          <div id="weather-forecast" className="bg-gradient-to-br from-sky-50 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 rounded-2xl p-6 border-2 border-sky-200 dark:border-sky-800">
             <div className="flex items-center mb-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center">
@@ -429,7 +429,7 @@ const Knowledge: React.FC = () => {
 
           {/* Market Prices */}
           {filteredContent.showMarketPrices && (
-          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card">
+          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border-2 border-green-200 dark:border-green-700">
             <div className="flex items-center mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
@@ -483,7 +483,7 @@ const Knowledge: React.FC = () => {
 
           {/* Crop Calendar */}
           {filteredContent.showCropCalendar && (
-          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card">
+          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border-2 border-purple-200 dark:border-purple-700">
             <div className="flex items-center mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
@@ -505,7 +505,7 @@ const Knowledge: React.FC = () => {
                     className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                       selectedMonth === index
                         ? 'bg-purple-500 text-white shadow-md'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {month.substring(0, 3)}
@@ -562,7 +562,7 @@ const Knowledge: React.FC = () => {
 
           {/* Smart Farming Tips */}
           {filteredContent.showFarmingTips && (
-          <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-2xl p-6 shadow-card border border-green-200 dark:border-green-800">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-2xl p-6 border-2 border-green-200 dark:border-green-800">
             <div className="flex items-center mb-4">
               <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
@@ -575,7 +575,7 @@ const Knowledge: React.FC = () => {
             <div className="space-y-3">
               <div className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                     <Droplets className="w-4 h-4 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
@@ -591,7 +591,7 @@ const Knowledge: React.FC = () => {
 
               <div className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                     <Leaf className="w-4 h-4 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
@@ -607,7 +607,7 @@ const Knowledge: React.FC = () => {
 
               <div className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                     <Sun className="w-4 h-4 text-green-600 dark:text-green-400" />
                   </div>
                   <div>

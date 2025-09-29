@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Mic, Camera, Bot, Upload, Image, X, ChevronDown, Languages, Volume2, Square, Trash2, Search, ChevronUp, MoreVertical, Plus, Copy, Check } from 'lucide-react'
+import { Send, Mic, Camera, Bot, Upload, Image, X, ChevronDown, Languages, Volume2, Square, Trash2, Search, ChevronUp, Plus, Copy, Check, Clock } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 
 interface Message {
@@ -42,13 +42,12 @@ const Chat: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<number[]>([])
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1)
-  const [showOptionsMenu, setShowOptionsMenu] = useState(false)
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
   const isReadingRef = useRef<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const optionsMenuRef = useRef<HTMLDivElement>(null)
   const mobileFileInputRef = useRef<HTMLInputElement>(null)
+  const hasChatHistory = messages.length > 1
 
   // *** FIXED SCROLL EFFECT ***
   // This single effect handles scrolling to the bottom whenever a new message is added.
@@ -66,7 +65,6 @@ const Chat: React.FC = () => {
     setTimeout(scrollToBottom, 0);
 
   }, [messages]); // This effect runs every time the 'messages' array changes.
-
 
   // Clear chat function
   const clearChat = () => {
@@ -118,20 +116,7 @@ const Chat: React.FC = () => {
   // New chat function (same as clear chat but with different messaging)
   const startNewChat = () => {
     clearChat()
-    setShowOptionsMenu(false)
     console.log('New chat started')
-  }
-
-  // Options menu functions
-  const openSearch = () => {
-    setShowSearch(true)
-    setShowOptionsMenu(false)
-    setTimeout(() => searchInputRef.current?.focus(), 100)
-  }
-
-  const openClearConfirm = () => {
-    setShowClearConfirm(true)
-    setShowOptionsMenu(false)
   }
 
   // Mobile device detection
@@ -201,20 +186,6 @@ const Chat: React.FC = () => {
       }
     }
   }
-
-  // Handle outside clicks to close options menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target as Node)) {
-        setShowOptionsMenu(false)
-      }
-    }
-
-    if (showOptionsMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showOptionsMenu])
 
   // Search functions
   const highlightTextInElement = (element: Element, searchTerm: string) => {
@@ -383,26 +354,33 @@ const Chat: React.FC = () => {
     })
   }
 
-  // Scroll handler - Show scroll button when not at bottom and content overflows
-  const handleScroll = () => {
-    if (!scrollContainerRef.current) return
-    
+  const updateScrollState = () => {
     const container = scrollContainerRef.current
-    
-    // Only show scroll button if content actually overflows
-    const contentOverflows = container.scrollHeight > container.clientHeight
+    if (!container) return
+
+    const contentOverflows = container.scrollHeight > container.clientHeight + 1
     if (!contentOverflows) {
       setShowScrollButton(false)
       return
     }
-    
-    // Check if user is near the bottom
+
     const threshold = 50
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
-    
-    // Show scroll button when not near bottom and content overflows
     setShowScrollButton(!isNearBottom)
   }
+
+  // Scroll handler - Show scroll button when not at bottom and content overflows
+  const handleScroll = () => {
+    updateScrollState()
+  }
+
+  useEffect(() => {
+    if (hasChatHistory) {
+      updateScrollState()
+    } else {
+      setShowScrollButton(false)
+    }
+  }, [messages, showSearch, hasChatHistory])
 
   // Smart scroll to bottom - Only works when there's content to scroll
   const scrollToBottom = () => {
@@ -424,6 +402,8 @@ const Chat: React.FC = () => {
     setTimeout(scrollToEnd, 50)
     setTimeout(scrollToEnd, 150)
     setTimeout(scrollToEnd, 300)
+
+    setTimeout(updateScrollState, 350)
   }
 
   // Translation function  
@@ -1278,7 +1258,7 @@ const Chat: React.FC = () => {
       {/* Search Bar - Only when active */}
       {showSearch && (
         <div className="fixed top-0 left-0 right-0 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-700 z-40 px-3 py-4 sm:p-4">
-          <div className="flex items-center space-x-2 max-w-screen-sm mx-auto">
+          <div className="flex items-center space-x-2 max-w-md mx-auto">
             <div className="flex-1 relative">
               <input
                 ref={searchInputRef}
@@ -1307,7 +1287,7 @@ const Chat: React.FC = () => {
                     setSearchQuery('')
                     performSearch('')
                   }}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1319,13 +1299,13 @@ const Chat: React.FC = () => {
               <div className="flex items-center space-x-1">
                 <button
                   onClick={() => navigateSearch('prev')}
-                  className="p-3 sm:p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[48px] min-w-[48px] sm:min-h-auto sm:min-w-auto touch-manipulation"
+                  className="p-3 sm:p-2 text-gray-600 dark:text-gray-400 rounded-lg transition-colors min-h-[48px] min-w-[48px] sm:min-h-auto sm:min-w-auto touch-manipulation"
                 >
                   <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
                 <button
                   onClick={() => navigateSearch('next')}
-                  className="p-3 sm:p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[48px] min-w-[48px] sm:min-h-auto sm:min-w-auto touch-manipulation"
+                  className="p-3 sm:p-2 text-gray-600 dark:text-gray-400 rounded-lg transition-colors min-h-[48px] min-w-[48px] sm:min-h-auto sm:min-w-auto touch-manipulation"
                 >
                   <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
@@ -1334,7 +1314,7 @@ const Chat: React.FC = () => {
             
             <button
               onClick={closeSearch}
-              className="p-3 sm:p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[48px] min-w-[48px] sm:min-h-auto sm:min-w-auto touch-manipulation"
+              className="p-3 sm:p-2 text-gray-600 dark:text-gray-400 rounded-lg transition-colors min-h-[48px] min-w-[48px] sm:min-h-auto sm:min-w-auto touch-manipulation"
             >
               <X className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
@@ -1356,31 +1336,82 @@ const Chat: React.FC = () => {
         </div>
       )}
       
-      {/* Messages Area - Full height container */}
+      {/* Header with rounded action buttons - Fixed at top */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-20" 
+        style={{ 
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 5rem)',
+          width: '100%'
+        }}>
+        <div className="max-w-md mx-auto">
+          <div className="flex justify-end items-center space-x-3 mb-4">
+            {/* New Chat Button */}
+            <button
+              onClick={startNewChat}
+              className="p-3 rounded-full bg-primary-500 text-white shadow-lg transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              title={t('newChat', { en: 'New Chat', ml: 'പുതിയ ചാറ്റ്' })}
+            >
+              <Plus className="w-5 h-5" strokeWidth={2} />
+            </button>
+            
+            {/* Search Button - Only show when there are actual chat messages */}
+            {messages.length > 1 && (
+              <button
+                onClick={() => {
+                  setShowSearch(!showSearch)
+                  if (!showSearch) {
+                    setTimeout(() => searchInputRef.current?.focus(), 100)
+                  }
+                }}
+                className={`p-3 rounded-full shadow-lg transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                  showSearch 
+                    ? 'bg-primary-500 text-white' 
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+                title={t('searchChat', { en: 'Search Chat', ml: 'ചാറ്റ് തിരയുക' })}
+              >
+                <Search className="w-5 h-5" strokeWidth={2} />
+              </button>
+            )}
+            
+            {/* Previous Chats Button (History) */}
+            <button
+              onClick={() => console.log('Show previous chats')} // Placeholder for now
+              className="p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 shadow-lg transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              title={t('previousChats', { en: 'Previous Chats', ml: 'മുന്നത്തെ ചാറ്റുകൾ' })}
+            >
+              <Clock className="w-5 h-5" strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Messages Area - Full height container with top padding for fixed header */}
       <div 
         ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 px-4 pt-4 pb-8 scroll-smooth chat-scroll"
+        onScroll={hasChatHistory ? handleScroll : undefined}
+        className="flex-1 px-4 pb-8 scroll-smooth chat-scroll flex flex-col"
         id="chat-container"
         style={{ 
           height: showSearch 
-            ? 'calc(100vh - 180px - env(safe-area-inset-top, 0px))' // With search bar: 100px + 80px = 180px
-            : 'calc(100vh - 100px - env(safe-area-inset-top, 0px))', // No header: just input area 100px
+            ? 'calc(100vh - 240px - env(safe-area-inset-top, 0px))' // With search bar + fixed header: 100px + 80px + 60px = 240px
+            : 'calc(100vh - 160px - env(safe-area-inset-top, 0px))', // With fixed header: input area 100px + header 60px = 160px
           maxHeight: showSearch 
-            ? 'calc(100vh - 180px - env(safe-area-inset-top, 0px))' // With search bar: 100px + 80px = 180px
-            : 'calc(100vh - 100px - env(safe-area-inset-top, 0px))', // No header: just input area 100px
-          overflowY: 'auto', // Always allow scrolling for full conversation access
+            ? 'calc(100vh - 240px - env(safe-area-inset-top, 0px))' // With search bar + fixed header: 100px + 80px + 60px = 240px
+            : 'calc(100vh - 160px - env(safe-area-inset-top, 0px))', // With fixed header: input area 100px + header 60px = 160px
+          overflowY: hasChatHistory ? 'auto' : 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
           scrollBehavior: 'smooth',
-          overscrollBehavior: 'contain'
+          overscrollBehavior: 'contain',
+          paddingTop: '140px' // Space for fixed header
         }}
       >
         {messages.length === 1 && (
           /* Welcome Section - Mobile optimized with no scroll */
           <div 
-            className="flex flex-col items-center justify-center text-center px-4 sm:px-6"
+            className="flex flex-col items-center justify-start text-center px-4 sm:px-6"
             style={{ 
-              height: 'calc(100vh - 180px)', // No header: just input area and padding
-              maxHeight: 'calc(100vh - 180px)',
+              minHeight: '100%',
               overflow: 'hidden'
             }}
           >
@@ -1413,7 +1444,7 @@ const Chat: React.FC = () => {
                   setInputMessage(message)
                   setTimeout(() => handleSendMessage(), 100)
                 }}
-                className="w-full py-4 px-4 bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-background-dark/50 transition-colors text-sm font-medium focus:ring-2 focus:ring-primary-400 min-h-[48px] touch-manipulation active:scale-98"
+                className="w-full py-4 px-4 bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-sm font-medium focus:ring-2 focus:ring-primary-400 min-h-[48px] touch-manipulation active:scale-98"
               >
                 {t('weatherForecast', { en: 'Weather Forecast', ml: 'കാലാവസ്ഥ പ്രവചനം' })}
               </button>
@@ -1427,7 +1458,7 @@ const Chat: React.FC = () => {
                   setInputMessage(message)
                   setTimeout(() => handleSendMessage(), 100)
                 }}
-                className="w-full py-4 px-4 bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-background-dark/50 transition-colors text-sm font-medium focus:ring-2 focus:ring-primary-400 min-h-[48px] touch-manipulation active:scale-98"
+                className="w-full py-4 px-4 bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-sm font-medium focus:ring-2 focus:ring-primary-400 min-h-[48px] touch-manipulation active:scale-98"
               >
                 {t('paddyDisease', { en: 'Paddy Disease', ml: 'നെൽക്കൃഷി രോഗങ്ങൾ' })}
               </button>
@@ -1441,7 +1472,7 @@ const Chat: React.FC = () => {
                   setInputMessage(message)
                   setTimeout(() => handleSendMessage(), 100)
                 }}
-                className="w-full py-4 px-4 bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-background-dark/50 transition-colors text-sm font-medium focus:ring-2 focus:ring-primary-400 min-h-[48px] touch-manipulation active:scale-98"
+                className="w-full py-4 px-4 bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-xl border border-gray-200 dark:border-gray-600 transition-colors text-sm font-medium focus:ring-2 focus:ring-primary-400 min-h-[48px] touch-manipulation active:scale-98"
               >
                 {t('organicFertilizers', { en: 'Organic Fertilizers', ml: 'ജൈവ വളങ്ങൾ' })}
               </button>
@@ -1451,7 +1482,7 @@ const Chat: React.FC = () => {
         
         {/* Chat Messages */}
         {messages.length > 1 && (
-          <div className="space-y-3 pb-24">
+          <div className="flex flex-col mt-auto space-y-3 pb-24">
             {messages.slice(1).map((message) => (
               <div
                 key={message.id}
@@ -1460,10 +1491,10 @@ const Chat: React.FC = () => {
               >
                 <div className={`flex flex-col ${message.isUser ? 'items-end' : 'items-start'} max-w-[90%] sm:max-w-[85%]`}>
                   <div
-                    className={`px-3 py-3 sm:px-4 rounded-2xl shadow-sm ${
+                    className={`px-3 py-3 sm:px-4 rounded-2xl ${
                       message.isUser
-                        ? 'bg-primary-500 text-white rounded-br-md'
-                        : 'bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-bl-md border border-gray-200 dark:border-gray-600'
+                        ? 'bg-primary-500 text-white rounded-br-md border-2 border-primary-600'
+                        : 'bg-surface-light dark:bg-surface-dark text-gray-900 dark:text-text-primary rounded-bl-md border-2 border-gray-200 dark:border-gray-600'
                     }`}
                   >
                     {message.imageUrl && (
@@ -1489,7 +1520,7 @@ const Chat: React.FC = () => {
                           {/* Copy Button */}
                           <button
                             onClick={() => copyMessage(message.id)}
-                            className="flex items-center gap-1 px-3 py-2 sm:px-2 sm:py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors min-h-[36px] touch-manipulation"
+                            className="flex items-center gap-1 px-3 py-2 sm:px-2 sm:py-1 text-xs text-gray-600 dark:text-gray-400 rounded-md transition-colors min-h-[36px] touch-manipulation"
                             title="Copy message"
                           >
                             {copiedMessageId === message.id ? (
@@ -1508,7 +1539,7 @@ const Chat: React.FC = () => {
                           <button
                             onClick={() => translateMessage(message.id)}
                             disabled={isTranslating === message.id}
-                            className="flex items-center gap-1 px-3 py-2 sm:px-2 sm:py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50 min-h-[36px] touch-manipulation"
+                            className="flex items-center gap-1 px-3 py-2 sm:px-2 sm:py-1 text-xs text-gray-600 dark:text-gray-400 rounded-md transition-colors disabled:opacity-50 min-h-[36px] touch-manipulation"
                             title={message.isTranslated ? "Show Original" : "Translate"}
                           >
                             <Languages className="w-3 h-3" />
@@ -1530,7 +1561,7 @@ const Chat: React.FC = () => {
                                 readMessage(message.id)
                               }
                             }}
-                            className="flex items-center gap-1 px-3 py-2 sm:px-2 sm:py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors min-h-[36px] touch-manipulation"
+                            className="flex items-center gap-1 px-3 py-2 sm:px-2 sm:py-1 text-xs text-gray-600 dark:text-gray-400 rounded-md transition-colors min-h-[36px] touch-manipulation"
                             title={isReading === message.id ? "Stop reading" : "Listen to message"}
                           >
                             {isReading === message.id ? (
@@ -1573,7 +1604,7 @@ const Chat: React.FC = () => {
         >
           <button
             onClick={scrollToBottom}
-            className="w-12 h-12 sm:w-10 sm:h-10 bg-white dark:bg-gray-700 rounded-full shadow-lg border border-gray-200 dark:border-gray-600 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 hover:scale-110 touch-manipulation"
+            className="w-12 h-12 sm:w-10 sm:h-10 bg-white dark:bg-gray-700 rounded-full border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center transition-all duration-200 touch-manipulation"
             aria-label="Scroll to bottom"
           >
             <ChevronDown className="w-6 h-6 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
@@ -1584,28 +1615,28 @@ const Chat: React.FC = () => {
       {/* Image Upload Popup */}
       {showImageUpload && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 m-4 max-w-sm w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 m-4 max-w-sm w-full border-2 border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary mb-4">
               {t('addImage', { en: 'Add Image', ml: 'ചിത്രം ചേർക്കുക' })}
             </h3>
             <div className="space-y-3">
               <button
                 onClick={handleCamera}
-                className="w-full flex items-center justify-center space-x-3 py-3 px-4 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 py-3 px-4 bg-primary-500 text-white rounded-xl transition-colors"
               >
                 <Camera className="w-5 h-5" />
                 <span>{t('takePhoto', { en: 'Take Photo', ml: 'ഫോട്ടോ എടുക്കുക' })}</span>
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center justify-center space-x-3 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-text-primary rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-text-primary rounded-xl transition-colors"
               >
                 <Upload className="w-5 h-5" />
                 <span>{t('uploadImage', { en: 'Upload Image', ml: 'ചിത്രം അപ്‌ലോഡ് ചെയ്യുക' })}</span>
               </button>
               <button
                 onClick={() => setShowImageUpload(false)}
-                className="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-text-primary rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-text-primary rounded-xl transition-colors"
               >
                 {t('cancel', { en: 'Cancel', ml: 'റദ്ദാക്കുക' })}
               </button>
@@ -1617,7 +1648,7 @@ const Chat: React.FC = () => {
       {/* Clear Chat Confirmation Dialog */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 m-4 max-w-sm w-full shadow-xl">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 m-4 max-w-sm w-full border-2 border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
@@ -1637,13 +1668,13 @@ const Chat: React.FC = () => {
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-text-primary rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+                className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-text-primary rounded-xl transition-colors font-medium"
               >
                 {t('cancel', { en: 'Cancel', ml: 'റദ്ദാക്കുക' })}
               </button>
               <button
                 onClick={clearChat}
-                className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+                className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl transition-colors font-medium"
               >
                 {t('clearConfirm', { en: 'Clear Chat', ml: 'ചാറ്റ് മായ്ക്കുക' })}
               </button>
@@ -1678,14 +1709,14 @@ const Chat: React.FC = () => {
 
       {/* Fixed Input Area */}
       <div 
-        className="fixed left-0 right-0 bg-background-light dark:bg-background-dark px-3 py-4 sm:p-4 z-40 safe-area-inset-bottom border-t border-gray-200 dark:border-gray-700"
+        className="fixed left-0 right-0 bg-background-light dark:bg-background-dark px-3 py-4 sm:p-4 z-40 safe-area-inset-bottom"
         style={{
-          bottom: '80px' // Moved up to avoid navbar overlap (was 64px)
+          bottom: '100px' // Moved up higher to provide better spacing from floating navbar
         }}
       >
         {/* Image Preview */}
         {selectedImage && (
-          <div className="mb-3 max-w-screen-sm mx-auto">
+          <div className="mb-3 max-w-md mx-auto">
             <div className="relative inline-block">
               <img
                 src={selectedImage.preview}
@@ -1694,7 +1725,7 @@ const Chat: React.FC = () => {
               />
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -1702,64 +1733,12 @@ const Chat: React.FC = () => {
           </div>
         )}
         
-        <div className="flex items-center space-x-2 sm:space-x-3 max-w-screen-sm mx-auto">
-          {/* Options Menu Button */}
-          <div className="relative" ref={optionsMenuRef}>
-            <button
-              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-              className="p-3 sm:p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation"
-              title={t('options', { en: 'Options', ml: 'ഓപ്ഷനുകൾ' })}
-            >
-              <MoreVertical className="w-5 h-5" />
-            </button>
-            
-            {/* Dropdown Menu */}
-            {showOptionsMenu && (
-              <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 options-dropdown">
-                <div className="py-1">
-                  {/* New Chat Option */}
-                  <button
-                    onClick={startNewChat}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{t('newChat', { en: 'New Chat', ml: 'പുതിയ ചാറ്റ്' })}</span>
-                  </button>
-                  
-                  {/* Search Option - Only show when there are messages */}
-                  {messages.length > 1 && (
-                    <button
-                      onClick={openSearch}
-                      className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <Search className="w-4 h-4" />
-                      <span>{t('searchChat', { en: 'Search Chat', ml: 'ചാറ്റ് തിരയുക' })}</span>
-                    </button>
-                  )}
-                  
-                  {/* Clear Chat Option - Only show when there are messages */}
-                  {messages.length > 1 && (
-                    <>
-                      <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
-                      <button
-                        onClick={openClearConfirm}
-                        className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>{t('clearChat', { en: 'Clear Chat', ml: 'ചാറ്റ് മായ്ക്കുക' })}</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          
+        <div className="flex items-center space-x-2 sm:space-x-3 max-w-md mx-auto">
           {/* Image Upload Button */}
           <button
             type="button"
             onClick={() => setShowImageUpload(true)}
-            className="p-3 sm:p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation"
+            className="p-3 sm:p-3 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation border border-gray-300 dark:border-gray-600 flex items-center justify-center"
           >
             <Image className="w-5 h-5" />
           </button>
@@ -1772,8 +1751,8 @@ const Chat: React.FC = () => {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               placeholder={t('chatPlaceholder', {
-                en: 'Ask a question or describe an issue...',
-                ml: 'ഒരു ചോദ്യം ചോദിക്കുക അല്ലെങ്കിൽ ഒരു പ്രശ്നം വിവരിക്കുക...'
+                en: 'Ask a question...',
+                ml: 'ചോദ്യം ചോദിക്കൂ...'
               })}
               className="w-full px-4 py-3 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-text-primary text-base sm:text-sm min-h-[48px] touch-manipulation"
               maxLength={500}
@@ -1784,10 +1763,10 @@ const Chat: React.FC = () => {
           <button
             type="button"
             onClick={handleVoiceRecording}
-            className={`p-3 sm:p-3 rounded-full transition-colors focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation ${
+            className={`p-3 sm:p-3 rounded-full transition-colors focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation border flex items-center justify-center ${
               isListening
-                ? 'bg-red-500 text-white animate-pulse'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                ? 'bg-red-500 text-white animate-pulse border-red-600'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600'
             }`}
           >
             <Mic className="w-5 h-5" />
@@ -1797,10 +1776,10 @@ const Chat: React.FC = () => {
           <button
             onClick={handleSendMessage}
             disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
-            className={`p-3 sm:p-3 rounded-full transition-all duration-200 focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation ${
+            className={`p-3 sm:p-3 rounded-full transition-all duration-200 focus:ring-2 focus:ring-primary-400 min-h-[48px] min-w-[48px] touch-manipulation border flex items-center justify-center ${
               (inputMessage.trim() || selectedImage) && !isLoading
-                ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg active:bg-primary-600 active:scale-95'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                ? 'bg-primary-500 text-white border-primary-600 active:bg-primary-600 active:scale-95'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600'
             }`}
           >
             {isLoading ? (

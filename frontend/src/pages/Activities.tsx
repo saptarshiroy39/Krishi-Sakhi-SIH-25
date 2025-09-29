@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, CheckCircle, Clock, Edit2, Trash2, Calendar, X, Save, RotateCcw, AlertTriangle, Search } from 'lucide-react'
+import { Plus, CheckCircle, Clock, Edit2, Trash2, X, Save, RotateCcw, AlertTriangle, Search } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { API_ENDPOINTS, apiCall } from '../config/api'
 
@@ -344,7 +344,7 @@ const Activities: React.FC = () => {
               <p className="text-red-700 dark:text-red-300">{error}</p>
               <button 
                 onClick={() => setError(null)}
-                className="ml-auto text-red-500 hover:text-red-700"
+                className="ml-auto text-red-500"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -363,8 +363,8 @@ const Activities: React.FC = () => {
               onClick={handleToggleSearch}
               className={`p-3 rounded-full transition-all duration-200 active:scale-95 ${
                 showSearch 
-                  ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
               }`}
               aria-label={t('search', { en: 'Search', ml: 'തിরയുക' })}
             >
@@ -376,7 +376,7 @@ const Activities: React.FC = () => {
             {/* Add Button - Uniform Style */}
             <button 
               onClick={handleAddActivity}
-              className="p-3 rounded-full bg-primary-500 dark:bg-primary-400 text-white shadow-lg transition-all duration-200 active:scale-95 hover:bg-primary-600 dark:hover:bg-primary-300"
+              className="p-3 rounded-full bg-primary-500 dark:bg-primary-400 text-white shadow-lg transition-all duration-200 active:scale-95"
               aria-label={t('addActivity', { en: 'Add Activity', ml: 'പ্രവർത്തനം ചേർക്കുക' })}
             >
               <Plus className="w-5 h-5" strokeWidth={2} />
@@ -409,11 +409,11 @@ const Activities: React.FC = () => {
         {/* Mobile-Optimized Stats Cards */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div 
-            className="bg-surface-light dark:bg-surface-dark rounded-2xl p-3 shadow-card"
+            className="bg-surface-light dark:bg-surface-dark rounded-2xl p-3 border-2 border-green-200 dark:border-green-700"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-white" />
               </div>
               <div>
                 <p className="text-xs text-gray-600 dark:text-text-secondary">
@@ -427,11 +427,11 @@ const Activities: React.FC = () => {
           </div>
           
           <div 
-            className="bg-surface-light dark:bg-surface-dark rounded-2xl p-3 shadow-card active:scale-95 transition-transform text-left"
+            className="bg-surface-light dark:bg-surface-dark rounded-2xl p-3 border-2 border-yellow-200 dark:border-yellow-700"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+              <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center">
+                <Clock className="w-5 h-5 text-white" />
               </div>
               <div>
                 <p className="text-xs text-gray-600 dark:text-text-secondary">
@@ -443,48 +443,10 @@ const Activities: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          <div 
-            className="bg-surface-light dark:bg-surface-dark rounded-2xl p-3 shadow-card text-left"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 dark:text-text-secondary">
-                  {t('thisWeek', { en: 'This Week', ml: 'ഈ ആഴ്ച' })}
-                </p>
-                <p className="text-xl font-bold text-gray-900 dark:text-text-primary">
-                  {activities.length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div 
-            className="bg-surface-light dark:bg-surface-dark rounded-2xl p-3 shadow-card text-left"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 dark:text-text-secondary">
-                  {t('weatherImpact', { en: 'Weather Impact', ml: 'കാലാവസ്ഥാ പ്രഭാവം' })}
-                </p>
-                <p className="text-xl font-bold text-gray-900 dark:text-text-primary">
-                  {activities.filter(a => ['Watering', 'Pest Control', 'Harvesting'].some(weather => 
-                    a.name.en.includes(weather) || weather.toLowerCase().includes(a.name.en.toLowerCase())
-                  )).length}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Activities List */}
-        <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-card">
+        <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border-2 border-gray-200 dark:border-gray-700">
           {/* Mobile-First Activity Log Header */}
           <div className="mb-4">
             <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary mb-3">
@@ -596,7 +558,7 @@ const Activities: React.FC = () => {
             <div className="mt-6 text-center">
               <button 
                 onClick={handleShowMore}
-                className="text-primary-500 dark:text-primary-400 font-medium hover:underline underline-offset-2 transition-all inline-flex items-center space-x-1"
+                className="text-primary-500 dark:text-primary-400 font-medium underline-offset-2 transition-all inline-flex items-center space-x-1"
               >
                 <span>
                   {showAll 
@@ -616,7 +578,7 @@ const Activities: React.FC = () => {
 
         {/* Activity Templates Modal */}
         {showTemplates && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 w-full max-w-lg shadow-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
@@ -624,7 +586,7 @@ const Activities: React.FC = () => {
                 </h3>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-2 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 </button>
@@ -635,11 +597,11 @@ const Activities: React.FC = () => {
                   <button
                     key={template.id}
                     onClick={() => handleTemplateSelect(template)}
-                    className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 border border-gray-200 dark:border-gray-700 transition-all text-left group"
+                    className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all text-left group"
                   >
                     <div className="flex items-center space-x-3 mb-2">
                       <span className="text-2xl">{template.icon}</span>
-                      <h4 className="font-medium text-gray-900 dark:text-text-primary group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                      <h4 className="font-medium text-gray-900 dark:text-text-primary">
                         {t(`template_${template.id}`, template.name)}
                       </h4>
                     </div>
@@ -653,13 +615,13 @@ const Activities: React.FC = () => {
               <div className="flex justify-between">
                 <button
                   onClick={handleCustomActivity}
-                  className="px-4 py-2 bg-primary-500 dark:bg-primary-400 hover:bg-primary-600 dark:hover:bg-primary-300 text-white rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 bg-primary-500 dark:bg-primary-400 text-white rounded-lg font-medium transition-colors"
                 >
                   {t('customActivity', { en: 'Create Custom Activity', ml: 'കസ്റ്റം പ്രവർത്തനം സൃഷ്ടിക്കുക' })}
                 </button>
                 <button
                   onClick={handleCloseModal}
-                  className="px-6 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                  className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
                 >
                   {t('cancel', { en: 'Cancel', ml: 'റദ്ദാക്കുക' })}
                 </button>
@@ -670,7 +632,7 @@ const Activities: React.FC = () => {
 
         {/* Add/Edit Activity Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 w-full max-w-lg shadow-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
@@ -681,7 +643,7 @@ const Activities: React.FC = () => {
                 </h3>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 dark:text-gray-400 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -714,7 +676,7 @@ const Activities: React.FC = () => {
                     type="date"
                     value={newActivity.date}
                     onChange={(e) => setNewActivity(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 dark:[&::-webkit-calendar-picker-indicator]:invert"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-background-dark text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:rounded [&::-webkit-calendar-picker-indicator]:p-1 dark:[&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>
 
@@ -759,14 +721,14 @@ const Activities: React.FC = () => {
               <div className="flex items-center justify-end space-x-3 mt-6">
                 <button
                   onClick={handleCloseModal}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium transition-colors"
                 >
                   {t('cancel', { en: 'Cancel', ml: 'റദ്ദാക്കുക' })}
                 </button>
                 <button
                   onClick={editingActivity ? handleSaveEditActivity : handleSaveNewActivity}
                   disabled={!newActivity.name.en.trim()}
-                  className="px-6 py-2 bg-primary-400 hover:bg-primary-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors inline-flex items-center space-x-2"
+                  className="px-6 py-2 bg-primary-400 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors inline-flex items-center space-x-2"
                 >
                   <Save className="w-4 h-4" />
                   <span>

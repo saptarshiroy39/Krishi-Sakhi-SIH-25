@@ -7,50 +7,67 @@ from datetime import datetime, timedelta
 import google.generativeai as genai
 import requests
 from flask import Blueprint, jsonify, request
-from sqlalchemy import text
-
+from groq import Groq
 from models import db
+from sqlalchemy import text
 
 home_bp = Blueprint("home", __name__)
 
-# Configure Gemini AI
-genai.configure(api_key=os.getenv("GEMINI_API_KEY_1"))
+
+# Initialize Gemini client functions
+def get_gemini_advisory_client():
+    """Get Gemini client for AI advisory (uses API key 1)"""
+    api_key = os.getenv("GEMINI_API_KEY_1")
+    if not api_key:
+        raise ValueError("Gemini API key 1 not configured for advisory")
+
+    # Configure with first API key each time to ensure correct key is used
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-2.5-flash")
+
+
+def get_openweather_api_key():
+    """Get OpenWeather API key"""
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+    if not api_key:
+        raise ValueError("OpenWeather API key not configured")
+    return api_key
 
 
 def get_weather_data(city="Kochi", country="IN"):
-    """Get weather data from OpenWeather API"""
-    # Use working API key directly to avoid environment issues
-    api_key = "1abad437668dbf695c0e16bdfcb6b403"
-    
+    """Get weather data from OpenWeather API using API key from environment"""
     try:
+        api_key = get_openweather_api_key()
+
         # Current weather
         current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&appid={api_key}&units=metric"
         current_response = requests.get(current_url, timeout=10)
-        
+
         if current_response.status_code != 200:
             return None
-            
+
         current_data = current_response.json()
 
         # 5-day forecast
         forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?q={city},{country}&appid={api_key}&units=metric"
         forecast_response = requests.get(forecast_url, timeout=10)
-        
+
         if forecast_response.status_code == 200:
             forecast_data = forecast_response.json()
             return {"current": current_data, "forecast": forecast_data}
         else:
             # Return just current weather if forecast fails
             return {"current": current_data, "forecast": None}
-            
+
     except Exception as e:
+        print(f"Weather API error: {e}")
         return None
 
 
 def generate_weather_forecast_insights(weather_data, location="Kerala"):
-    """Generate AI-powered weather insights and forecast using Gemini"""
+    """Generate AI-powered weather insights and forecast using Gemini API Key 1"""
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = get_gemini_advisory_client()
 
         if weather_data and "forecast" in weather_data:
             forecast_list = weather_data["forecast"]["list"][
@@ -96,26 +113,26 @@ def clean_advisory_text(text):
     """Clean up markdown formatting from AI advisory text"""
     if not text:
         return text
-    
+
     # Remove markdown headers (# ## ###)
-    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
-    
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+
     # Remove bold/italic markdown (* **)
-    text = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', text)
-    
+    text = re.sub(r"\*{1,2}([^*]+)\*{1,2}", r"\1", text)
+
     # Clean up excessive line breaks
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
     # Clean up markdown list formatting
-    text = re.sub(r'^\*\s+', '- ', text, flags=re.MULTILINE)
-    
+    text = re.sub(r"^\*\s+", "- ", text, flags=re.MULTILINE)
+
     return text.strip()
 
 
 def generate_farming_advisory(weather_data, location="Kerala"):
     """Generate AI-powered farming advisory based on weather using Gemini API Key 1"""
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = get_gemini_advisory_client()
 
         if weather_data:
             current = weather_data["current"]
@@ -153,13 +170,17 @@ def generate_farming_advisory(weather_data, location="Kerala"):
             """
 
         response = model.generate_content(prompt)
-        advisory_text = response.text if response.text else "Unable to generate advisory at this time."
-        
+        advisory_text = (
+            response.text
+            if response.text
+            else "Unable to generate advisory at this time."
+        )
+
         # Clean up markdown formatting
         return clean_advisory_text(advisory_text)
 
     except Exception as e:
-        print(f"Gemini AI error: {e}")
+        print(f"Gemini AI advisory error: {e}")
         return "Unable to generate advisory at this time. Please check back later."
 
 
@@ -167,7 +188,7 @@ def generate_quick_stats():
     """Generate quick farm statistics from database"""
     try:
         from models import Activity, Crop, Farm, Farmer
-        
+
         # Get actual statistics from database
         total_farmers = Farmer.query.filter_by(is_active=True).count()
         total_farms = Farm.query.count()
@@ -175,14 +196,18 @@ def generate_quick_stats():
         recent_activities = Activity.query.filter(
             Activity.date >= datetime.now() - timedelta(days=7)
         ).count()
-        
+
         # Get active crops (not harvested)
-        active_crops = Crop.query.filter(Crop.status.in_(['planted', 'growing'])).count()
-        
+        active_crops = Crop.query.filter(
+            Crop.status.in_(["planted", "growing"])
+        ).count()
+
         return {
             "total_crops": active_crops or random.randint(3, 8),
             "active_tasks": recent_activities or random.randint(2, 6),
-            "upcoming_activities": random.randint(1, 4),  # Would need separate task tracking
+            "upcoming_activities": random.randint(
+                1, 4
+            ),  # Would need separate task tracking
             "weather_alerts": random.randint(0, 2),  # Would need weather alert system
             "recent_activities_count": recent_activities or random.randint(5, 12),
         }
@@ -198,38 +223,49 @@ def generate_quick_stats():
         }
 
 
+def get_groq_client():
+    """Get GROQ client for lightweight AI tasks"""
+    from groq import Groq
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ API key not configured")
+    return Groq(api_key=api_key)
+
+
 def get_market_prices():
-    """Get current market prices for major crops in Kerala using AI insights"""
+    """Get current market prices for major crops in Kerala using GROQ for lightweight AI insights"""
     try:
-        # Use AI to generate realistic market prices based on Kerala context
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        
-        prompt = """Provide current market price information for major crops in Kerala, India:
-        - Rice (per quintal)
-        - Coconut (per 100 nuts)
-        - Black Pepper (per kg)
-        - Cardamom (per kg)
-        
-        Format as JSON with: name, price (in INR), change_percentage (recent trend)
-        Keep it realistic for Kerala market prices as of 2024."""
-        
-        response = model.generate_content(prompt)
-        
-        # Parse AI response and extract price data
-        response_text = response.text
-        
-        # Fallback data in case AI parsing fails
+        # Use GROQ for lightweight market price insights
+        client = get_groq_client()
+
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a market price advisor for Kerala farmers. Provide realistic current market prices for major crops in Kerala, India.",
+                },
+                {
+                    "role": "user",
+                    "content": "Provide current market price information for major crops in Kerala: Rice (per quintal), Coconut (per 100 nuts), Black Pepper (per kg), Cardamom (per kg). Format as realistic prices with change percentages.",
+                },
+            ],
+            max_tokens=150,
+            temperature=0.3,
+        )
+
+        # Parse response and provide fallback data
         fallback_crops = [
             {"name": "Rice", "price": 2200, "change": 2.5},
             {"name": "Coconut", "price": 30, "change": -1.2},
             {"name": "Pepper", "price": 500, "change": 8.3},
             {"name": "Cardamom", "price": 1500, "change": -3.1},
         ]
-        
-        # For now, return fallback data with AI-informed realistic values
-        # In production, this would integrate with actual market price APIs
+
+        # For now, return fallback data (GROQ response can be parsed in production)
         return fallback_crops
-        
+
     except Exception as e:
         print(f"Market prices error: {e}")
         # Return realistic fallback data
@@ -281,7 +317,9 @@ def get_dashboard_data():
         weather_data = get_weather_data(location)
 
         # Only generate advisory if explicitly requested
-        generate_advisory = request.args.get("generate_advisory", "false").lower() == "true"
+        generate_advisory = (
+            request.args.get("generate_advisory", "false").lower() == "true"
+        )
         advisory = None
         if generate_advisory:
             advisory = generate_farming_advisory(weather_data, location)
@@ -326,18 +364,15 @@ def get_dashboard_data():
 
 @home_bp.route("/weather-forecast/<city>", methods=["GET"])
 def get_weather_forecast(city):
-    """Get detailed weather forecast with AI insights using Gemini API Key 2"""
+    """Get detailed weather forecast with AI insights using Gemini API Key 1 (for consistency with advisory)"""
     try:
-        # Configure Gemini with API Key 2 for weather insights
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY_2"))
-
         weather_data = get_weather_data(city)
 
         if weather_data:
             current = weather_data["current"]
             forecast_list = weather_data["forecast"]["list"][:8]  # Next 24 hours
 
-            # Get AI insights using Gemini API Key 2
+            # Get AI insights using Gemini API Key 1 (same as advisory for consistency)
             weather_insights = generate_weather_forecast_insights(weather_data, city)
 
             formatted_forecast = []
@@ -396,16 +431,13 @@ def get_weather_forecast(city):
 def regenerate_advisory():
     """Regenerate farming advisory using Gemini API Key 1"""
     try:
-        # Ensure we're using API Key 1 for advisory
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY_1"))
-
         data = request.get_json()
         location = data.get("location", "Kerala")
 
         # Get fresh weather data
         weather_data = get_weather_data(location)
 
-        # Generate new advisory
+        # Generate new advisory using API key 1
         advisory = generate_farming_advisory(weather_data, location)
 
         return jsonify(
@@ -426,13 +458,12 @@ def regenerate_advisory():
         )
 
 
-
 @home_bp.route("/activities/recent", methods=["GET"])
 def get_recent_activities():
     """Get recent farming activities from database"""
     try:
         from models import Activity, Crop, Farm
-        
+
         # Get recent activities from database (last 10 activities)
         recent_activities = (
             db.session.query(Activity, Crop, Farm)
@@ -442,7 +473,7 @@ def get_recent_activities():
             .limit(10)
             .all()
         )
-        
+
         # Define activity translations
         activity_translations = {
             "Planting": {"en": "Planting", "ml": "നടൽ"},
@@ -453,22 +484,22 @@ def get_recent_activities():
             "Harvesting": {"en": "Harvesting", "ml": "വിളവെടുപ്പ്"},
             "Pruning": {"en": "Pruning", "ml": "വെട്ടിച്ചുരുക്കൽ"},
         }
-        
+
         activities = []
         for activity, crop, farm in recent_activities:
             # Get activity translation or use default
             activity_name = activity_translations.get(
-                activity.activity_type, 
-                {"en": activity.activity_type, "ml": activity.activity_type}
+                activity.activity_type,
+                {"en": activity.activity_type, "ml": activity.activity_type},
             )
-            
+
             # Calculate area from crop or farm data
             area_text = ""
             if crop and crop.area_planted:
                 area_text = f"{crop.area_planted} acres"
             elif farm and farm.size:
                 area_text = f"~{farm.size} acres"
-            
+
             activity_data = {
                 "id": activity.id,
                 "name": activity_name,
@@ -482,7 +513,7 @@ def get_recent_activities():
                 "labor_hours": activity.labor_hours,
             }
             activities.append(activity_data)
-        
+
         # If no activities found, return empty array
         if not activities:
             activities = []

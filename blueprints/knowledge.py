@@ -4,16 +4,39 @@ from datetime import datetime
 import google.generativeai as genai
 import requests
 from flask import Blueprint, jsonify, request
+from groq import Groq
 
 knowledge_bp = Blueprint("knowledge", __name__)
 
-# Configure Gemini AI
-GEMINI_API_KEY_2 = os.getenv("GEMINI_API_KEY_2")
-if GEMINI_API_KEY_2:
-    genai.configure(api_key=GEMINI_API_KEY_2)
+
+# Initialize API clients
+def get_gemini_knowledge_client():
+    """Get Gemini client for knowledge content using API key 2"""
+    api_key = os.getenv("GEMINI_API_KEY_2")
+    if not api_key:
+        raise ValueError("Gemini API key 2 not configured for knowledge")
+
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-2.5-flash")
+
+
+def get_groq_client():
+    """Get GROQ client for lightweight AI tasks"""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ API key not configured")
+    return Groq(api_key=api_key)
+
+
+def get_openweather_api_key():
+    """Get OpenWeather API key from environment"""
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+    if not api_key:
+        raise ValueError("OpenWeather API key not configured")
+    return api_key
+
 
 # OpenWeather API configuration
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "your_openweather_api_key")
 OPENWEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5"
 
 
@@ -38,14 +61,8 @@ def get_knowledge_content():
             except:
                 pass  # Continue without weather data if API fails
 
-        # Generate content using Gemini AI
-        if not GEMINI_API_KEY_2:
-            return (
-                jsonify({"success": False, "error": "Gemini API key not configured"}),
-                500,
-            )
-
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        # Generate content using Gemini API Key 2
+        model = get_gemini_knowledge_client()
 
         # Add context for better responses
         context = """You are an expert agricultural advisor for Kerala, India. Provide detailed, practical, and location-specific advice. 
@@ -76,36 +93,35 @@ def get_knowledge_content():
 
 @knowledge_bp.route("/market-prices", methods=["GET"])
 def get_market_prices():
-    """Get current market prices for major crops in Kerala"""
+    """Get current market prices for major crops in Kerala using GROQ for lightweight AI tasks"""
     try:
-        # This would typically connect to government market price APIs
-        # For now, we'll use AI to generate current market insights
-        if not GEMINI_API_KEY_2:
-            return jsonify({"success": False, "error": "API key not configured"}), 500
+        # Use GROQ for lightweight market price insights (as per requirement 6)
+        client = get_groq_client()
 
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        prompt = """Provide current market price information for major crops in Kerala, India including:
-        - Rice (different varieties)
-        - Coconut
-        - Rubber
-        - Black pepper
-        - Cardamom
-        - Turmeric
-        - Ginger
-        - Banana
-        - Seasonal fruits and vegetables
-        
-        Include approximate price ranges per kg/quintal, recent trends, and factors affecting prices.
-        Format as a structured response with crop names, prices, and market insights."""
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a market price advisor for Kerala farmers. Provide current market price information concisely.",
+                },
+                {
+                    "role": "user",
+                    "content": "Provide current market price information for major crops in Kerala, India including Rice, Coconut, Rubber, Black pepper, Cardamom, Turmeric, Ginger, Banana, and seasonal fruits/vegetables. Include approximate price ranges and recent trends.",
+                },
+            ],
+            max_tokens=300,
+            temperature=0.3,
+        )
 
-        response = model.generate_content(prompt)
-        content = response.text if response.text else "Market price data unavailable"
+        content = response.choices[0].message.content.strip()
 
         return jsonify(
             {
                 "success": True,
                 "market_prices": content,
                 "timestamp": datetime.now().isoformat(),
+                "powered_by": "GROQ",
             }
         )
 
@@ -114,16 +130,15 @@ def get_market_prices():
 
 
 def get_current_weather(city="Kochi"):
-    """Get current weather data from OpenWeatherMap API"""
+    """Get current weather data from OpenWeatherMap API using environment API key"""
     try:
-        # Use working API key directly
-        api_key = "1abad437668dbf695c0e16bdfcb6b403"
-            
-        url = f"{OPENWEATHER_BASE_URL}/weather" 
+        api_key = get_openweather_api_key()
+
+        url = f"{OPENWEATHER_BASE_URL}/weather"
         params = {"q": city, "appid": api_key, "units": "metric"}
-        
+
         response = requests.get(url, params=params, timeout=10)
-        
+
         if response.status_code == 200:
             data = response.json()
             return {
@@ -135,21 +150,19 @@ def get_current_weather(city="Kochi"):
         else:
             return None
     except Exception as e:
+        print(f"Weather API error: {e}")
         return None
 
 
 @knowledge_bp.route("/weather-analysis", methods=["GET"])
 def get_weather_analysis():
-    """Get detailed weather analysis for farming"""
+    """Get detailed weather analysis for farming using Gemini API Key 2"""
     try:
         weather_data = get_current_weather("Kochi")
         if not weather_data:
             return jsonify({"success": False, "error": "Weather data unavailable"}), 500
 
-        if not GEMINI_API_KEY_2:
-            return jsonify({"success": False, "error": "API key not configured"}), 500
-
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = get_gemini_knowledge_client()
         prompt = f"""Based on the current weather conditions in Kerala:
         - Temperature: {weather_data['temperature']}°C
         - Condition: {weather_data['description']}
