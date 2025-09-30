@@ -6,6 +6,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext'
 import { Link } from 'react-router-dom'
 import { API_ENDPOINTS, apiCall } from '../config/api'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 
 
@@ -47,20 +48,33 @@ const Home: React.FC = () => {
   const [pendingActivities, setPendingActivities] = useState(0)
   const [totalFarms, setTotalFarms] = useState(0)
   const [isGeneratingAdvisory, setIsGeneratingAdvisory] = useState(false)
+  const [isRefreshingWeather, setIsRefreshingWeather] = useState(false)
+  
+  // Cache flag to prevent unnecessary API calls
+  const [dataLoaded, setDataLoaded] = useState(false)
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  // Fetch dashboard data with advisory
+  const fetchDashboardData = async (includeAdvisory = true) => {
     try {
+      setIsRefreshingWeather(true)
       console.log('Fetching dashboard data for location:', location)
-      const data = await apiCall(API_ENDPOINTS.HOME_DASHBOARD(location))
+      // Add generate_advisory parameter to fetch advisory on initial load
+      const endpoint = includeAdvisory 
+        ? `${API_ENDPOINTS.HOME_DASHBOARD(location)}&generate_advisory=true`
+        : API_ENDPOINTS.HOME_DASHBOARD(location)
+      
+      const data = await apiCall(endpoint)
       console.log('Dashboard data received:', data)
       
       if (data.success) {
         console.log('Setting dashboard data with weather:', data.data.weather)
         setDashboardData(data.data)
+        setDataLoaded(true) // Mark data as loaded
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+    } finally {
+      setIsRefreshingWeather(false)
     }
   }
 
@@ -136,9 +150,16 @@ const Home: React.FC = () => {
 
 
 
-  // Load data on component mount
+  // Load data on component mount - only if not already loaded
   useEffect(() => {
     const loadData = async () => {
+      // Skip if data already loaded (cached)
+      if (dataLoaded) {
+        console.log('Using cached data, skipping API calls')
+        setLoading(false)
+        return
+      }
+      
       setLoading(true)
       // First fetch profile data (which includes location)
       await fetchProfileData()
@@ -151,11 +172,12 @@ const Home: React.FC = () => {
     }
     
     loadData()
-  }, [])
+  }, []) // Empty dependency array - only run once on mount
 
-  // Refresh dashboard data when location changes
+  // Refresh dashboard data when location changes (only if data was already loaded)
   useEffect(() => {
-    if (location !== 'Kochi') { // Only refetch if location actually changed
+    if (dataLoaded && location !== 'Kochi') {
+      // Only refetch if data was already loaded and location actually changed
       fetchDashboardData()
     }
   }, [location])
@@ -166,14 +188,9 @@ const Home: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('loadingDashboard', { en: 'Loading dashboard...', ml: 'ഡാഷ്ബോർഡ് ലോഡ് ചെയ്യുന്നു...' })}
-          </p>
-        </div>
-      </div>
+      <LoadingSpinner 
+        message={t('loadingDashboard', { en: 'Loading dashboard...', ml: 'ഡാഷ്ബോർഡ് ലോഡ് ചെയ്യുന്നു...' })}
+      />
     )
   }
 
@@ -207,46 +224,47 @@ const Home: React.FC = () => {
               {t('weather', { en: 'Weather', ml: 'കാലാവസ്ഥ' })}
             </h2>
             <button 
-              onClick={() => fetchDashboardData()}
-              className="p-2 transition-colors"
+              onClick={() => fetchDashboardData(false)}
+              disabled={isRefreshingWeather}
+              className="p-2 text-blue-600 dark:text-blue-400 rounded-lg transition-all active:scale-95 disabled:opacity-50"
               title="Refresh weather data"
             >
-              <RefreshCw className="w-5 h-5 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300" />
+              <RefreshCw className={`w-5 h-5 ${isRefreshingWeather ? 'animate-spin' : ''}`} />
             </button>
           </div>
           
           {dashboardData?.weather ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
-                <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Thermometer className="w-5 h-5 text-white" />
+              <div className="text-center p-4 bg-white/60 dark:bg-blue-800/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+                  <Thermometer className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{dashboardData.weather.temperature}°C</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">Temperature</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{dashboardData.weather.temperature}°C</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Temperature</p>
               </div>
               
-              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Droplets className="w-5 h-5 text-white" />
+              <div className="text-center p-4 bg-white/60 dark:bg-blue-800/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+                  <Droplets className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{dashboardData.weather.humidity}%</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">Humidity</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">{dashboardData.weather.humidity}%</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Humidity</p>
               </div>
               
-              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Wind className="w-5 h-5 text-white" />
+              <div className="text-center p-4 bg-white/60 dark:bg-blue-800/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+                  <Wind className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{dashboardData.weather.wind_speed} m/s</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">Wind Speed</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">{dashboardData.weather.wind_speed} m/s</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Wind Speed</p>
               </div>
               
-              <div className="text-center p-3 bg-blue-100/50 dark:bg-blue-800/30 rounded-lg">
-                <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <Cloud className="w-5 h-5 text-white" />
+              <div className="text-center p-4 bg-white/60 dark:bg-blue-800/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+                  <Cloud className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <p className="text-2xl font-bold text-gray-600 dark:text-gray-400 capitalize">{dashboardData.weather.description}</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">Condition</p>
+                <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1 capitalize">{dashboardData.weather.description}</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Condition</p>
               </div>
             </div>
           ) : (

@@ -61,11 +61,14 @@ def get_groq_summary(text, max_length=100):
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": f"Summarize the following text in maximum {max_length} characters. Keep it concise and relevant for farmers."},
-                {"role": "user", "content": text}
+                {
+                    "role": "system",
+                    "content": f"Summarize the following text in maximum {max_length} characters. Keep it concise and relevant for farmers.",
+                },
+                {"role": "user", "content": text},
             ],
             max_tokens=50,
-            temperature=0.3
+            temperature=0.3,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -81,11 +84,14 @@ def get_groq_classification(text, categories):
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": f"Classify the following text into one of these categories: {categories_str}. Respond with only the category name."},
-                {"role": "user", "content": text}
+                {
+                    "role": "system",
+                    "content": f"Classify the following text into one of these categories: {categories_str}. Respond with only the category name.",
+                },
+                {"role": "user", "content": text},
             ],
             max_tokens=10,
-            temperature=0.1
+            temperature=0.1,
         )
         result = response.choices[0].message.content.strip()
         return result if result in categories else categories[0]
@@ -235,6 +241,31 @@ def chat():
     if not message:
         return jsonify({"error": "Please provide a message"}), 400
 
+    # Check if message is asking about weather
+    weather_keywords = [
+        "weather",
+        "temperature",
+        "rain",
+        "forecast",
+        "കാലാവസ്ഥ",
+        "താപനില",
+        "മഴ",
+    ]
+    is_weather_query = any(keyword in message.lower() for keyword in weather_keywords)
+
+    # Get weather data if it's a weather-related query
+    weather_context = ""
+    if is_weather_query:
+        try:
+            from blueprints.home import get_weather_data
+
+            weather_data = get_weather_data("Kochi")
+            if weather_data and "current" in weather_data:
+                current = weather_data["current"]
+                weather_context = f"\n\nCurrent Weather Data for Kochi:\n- Temperature: {current['main']['temp']}°C\n- Feels like: {current['main']['feels_like']}°C\n- Condition: {current['weather'][0]['description']}\n- Humidity: {current['main']['humidity']}%\n- Wind Speed: {current['wind']['speed']} m/s\n\nPlease use this real-time weather data to answer the user's question."
+        except Exception as e:
+            print(f"Error fetching weather data for chat: {e}")
+
     # Detect language and create appropriate system prompt
     def detect_language(text):
         # Simple language detection based on character patterns
@@ -308,8 +339,8 @@ Format your responses clearly with proper structure:
         # Use dedicated Gemini chat client for main AI conversations (API key 1)
         model = get_gemini_chat_client()
 
-        # Create the conversation context
-        full_prompt = f"{system_prompt}\n\nUser: {message}"
+        # Create the conversation context with weather data if available
+        full_prompt = f"{system_prompt}{weather_context}\n\nUser: {message}"
 
         # Generate response using Gemini
         response = model.generate_content(
@@ -356,7 +387,8 @@ Format your responses clearly with proper structure:
         return jsonify({"response": fallback_response})
 
 
-@chat_bp.route("/translate", methods=["POST"])
+@chat_bp.route("/chat/translate", methods=["POST"])
+@chat_bp.route("/translate", methods=["POST"])  # Backward compatibility
 def translate_text():
     """Translate text between English and Malayalam"""
     data = request.get_json()
@@ -586,19 +618,23 @@ def quick_query():
         data = request.get_json()
         query = data.get("query")
         task_type = data.get("type", "general")  # general, summary, classify
-        
+
         if not query:
             return jsonify({"error": "Query is required"}), 400
 
         # Use GROQ for lightweight, fast responses
         client = get_groq_client()
-        
+
         # Customize system prompt based on task type
         if task_type == "summary":
             system_prompt = "You are a concise agricultural assistant. Provide brief, practical summaries for farmers. Keep responses under 150 words."
         elif task_type == "classify":
-            categories = data.get("categories", ["general", "pest", "disease", "weather", "fertilizer"])
-            return jsonify({"classification": get_groq_classification(query, categories)})
+            categories = data.get(
+                "categories", ["general", "pest", "disease", "weather", "fertilizer"]
+            )
+            return jsonify(
+                {"classification": get_groq_classification(query, categories)}
+            )
         else:
             system_prompt = "You are a helpful agricultural assistant. Provide quick, practical answers for farmers. Keep responses concise but helpful."
 
@@ -606,26 +642,29 @@ def quick_query():
             model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query}
+                {"role": "user", "content": query},
             ],
             max_tokens=200,
-            temperature=0.7
+            temperature=0.7,
         )
 
         ai_response = response.choices[0].message.content.strip()
-        
+
         # Add emojis for better user experience
         enhanced_response = enhance_with_emojis(ai_response, "en")
-        
-        return jsonify({
-            "response": enhanced_response,
-            "type": task_type,
-            "powered_by": "GROQ"
-        })
+
+        return jsonify(
+            {"response": enhanced_response, "type": task_type, "powered_by": "GROQ"}
+        )
 
     except Exception as e:
         print(f"GROQ quick query error: {str(e)}")
-        return jsonify({
-            "error": "Unable to process quick query at this time",
-            "fallback": "Please try the main chat for detailed assistance"
-        }), 500
+        return (
+            jsonify(
+                {
+                    "error": "Unable to process quick query at this time",
+                    "fallback": "Please try the main chat for detailed assistance",
+                }
+            ),
+            500,
+        )

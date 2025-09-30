@@ -430,7 +430,7 @@ const Chat: React.FC = () => {
       const currentLang = message.originalLanguage || 'en'
       const targetLang = currentLang === 'en' ? 'ml' : 'en'
 
-      const response = await fetch('/api/translate', {
+      const response = await fetch('/api/chat/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

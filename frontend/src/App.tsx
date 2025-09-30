@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { LanguageProvider } from './contexts/LanguageContext.tsx'
+import { NotificationProvider } from './contexts/NotificationContext.tsx'
 import Layout from './components/Layout.tsx'
 import Home from './pages/Home.tsx'
 import Activities from './pages/Activities.tsx'
@@ -46,9 +47,11 @@ function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </NotificationProvider>
       </LanguageProvider>
     </ThemeProvider>
   )

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { API_ENDPOINTS, apiCall } from '../config/api'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 interface MarketPrice {
   name: string;
@@ -27,121 +28,101 @@ const Knowledge: React.FC = () => {
   const [weatherForecast, setWeatherForecast] = useState<any>(null)
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([])
   const [cropCalendar, setCropCalendar] = useState<CropCalendarItem[]>([])
+  const [farmingTips, setFarmingTips] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [location] = useState('Kochi')
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [showSearch, setShowSearch] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // Refresh loading states
+  const [refreshingWeather, setRefreshingWeather] = useState(false)
+  const [refreshingMarket, setRefreshingMarket] = useState(false)
+  const [refreshingCalendar, setRefreshingCalendar] = useState(false)
+  const [refreshingTips, setRefreshingTips] = useState(false)
+  
+  // Cache flags to prevent unnecessary API calls
+  const [dataLoaded, setDataLoaded] = useState({
+    weather: false,
+    market: false,
+    calendar: false,
+    tips: false
+  })
 
-  // Mock crop calendar data (you can replace with API call)
-  const mockCropCalendar: CropCalendarItem[] = [
-    {
-      month: 'January',
-      crops: ['Tomato', 'Onion', 'Cabbage', 'Cauliflower'],
-      activities: ['Land preparation', 'Sowing', 'Irrigation'],
-      tips: 'Perfect time for winter vegetables. Ensure proper drainage.'
-    },
-    {
-      month: 'February', 
-      crops: ['Brinjal', 'Okra', 'Chili', 'Cucumber'],
-      activities: ['Transplanting', 'Fertilizing', 'Pest control'],
-      tips: 'Monitor for early pest attacks. Apply organic fertilizers.'
-    },
-    {
-      month: 'March',
-      crops: ['Watermelon', 'Muskmelon', 'Bitter gourd', 'Ridge gourd'],
-      activities: ['Summer crop planting', 'Mulching', 'Water management'],
-      tips: 'Start summer crops early. Focus on water conservation.'
-    },
-    {
-      month: 'April',
-      crops: ['Rice', 'Maize', 'Sugarcane', 'Cotton'],
-      activities: ['Pre-monsoon activities', 'Seed treatment', 'Field preparation'],
-      tips: 'Prepare for monsoon crops. Check irrigation systems.'
-    },
-    {
-      month: 'May',
-      crops: ['Rice', 'Pulses', 'Fodder crops', 'Green manure'],
-      activities: ['Nursery preparation', 'Land preparation', 'Organic matter addition'],
-      tips: 'Focus on soil health improvement with organic matter.'
-    },
-    {
-      month: 'June',
-      crops: ['Rice', 'Maize', 'Pulses', 'Cotton'],
-      activities: ['Transplanting', 'Direct seeding', 'Weed management'],
-      tips: 'Monsoon planting season. Ensure proper drainage.'
-    },
-    {
-      month: 'July',
-      crops: ['Rice', 'Maize', 'Pulses', 'Vegetables'],
-      activities: ['Gap filling', 'Top dressing', 'Pest monitoring'],
-      tips: 'Critical growth period. Monitor for pests and diseases.'
-    },
-    {
-      month: 'August',
-      crops: ['Rice', 'Sugarcane', 'Vegetables', 'Spices'],
-      activities: ['Weeding', 'Fertilizer application', 'Disease control'],
-      tips: 'Heavy monsoon period. Focus on drainage and disease control.'
-    },
-    {
-      month: 'September',
-      crops: ['Post-monsoon vegetables', 'Flowers', 'Spices'],
-      activities: ['Harvest preparation', 'Post-monsoon sowing', 'Storage preparation'],
-      tips: 'Transition period. Prepare for post-monsoon crops.'
-    },
-    {
-      month: 'October',
-      crops: ['Wheat', 'Barley', 'Mustard', 'Peas'],
-      activities: ['Rabi crop sowing', 'Harvesting Kharif crops', 'Storage'],
-      tips: 'Winter crop planting season. Focus on timely sowing.'
-    },
-    {
-      month: 'November',
-      crops: ['Wheat', 'Barley', 'Gram', 'Lentil'],
-      activities: ['Irrigation', 'Fertilizer application', 'Pest control'],
-      tips: 'Cool season crops. Monitor for late blight and rusts.'
-    },
-    {
-      month: 'December',
-      crops: ['Wheat', 'Vegetables', 'Flowers', 'Spices'],
-      activities: ['Winter care', 'Harvesting', 'Marketing'],
-      tips: 'Harvest season for many crops. Plan for value addition.'
+  // Fetch crop calendar from GROQ API
+  const fetchCropCalendar = async () => {
+    try {
+      setRefreshingCalendar(true)
+      const data = await apiCall('/api/knowledge/crop-calendar')
+      if (data.success && data.data) {
+        setCropCalendar(data.data)
+        setDataLoaded(prev => ({ ...prev, calendar: true }))
+      }
+    } catch (error) {
+      console.error('Error fetching crop calendar:', error)
+    } finally {
+      setRefreshingCalendar(false)
     }
-  ]
+  }
+
+  // Fetch farming tips from GROQ API
+  const fetchFarmingTips = async () => {
+    try {
+      setRefreshingTips(true)
+      const data = await apiCall('/api/knowledge/farming-tips')
+      if (data.success && data.tips) {
+        setFarmingTips(data.tips)
+        setDataLoaded(prev => ({ ...prev, tips: true }))
+      }
+    } catch (error) {
+      console.error('Error fetching farming tips:', error)
+    } finally {
+      setRefreshingTips(false)
+    }
+  }
 
   // Fetch weather forecast
   const fetchWeatherForecast = async () => {
     try {
+      setRefreshingWeather(true)
       const data = await apiCall(API_ENDPOINTS.HOME_WEATHER(location))
       if (data.success) {
         setWeatherForecast(data.data)
+        setDataLoaded(prev => ({ ...prev, weather: true }))
       }
     } catch (error) {
       console.error('Error fetching weather forecast:', error)
+    } finally {
+      setRefreshingWeather(false)
     }
   }
 
-  // Fetch market prices 
+  // Fetch market prices from GROQ API
   const fetchMarketPrices = async () => {
     try {
-      const data = await apiCall(API_ENDPOINTS.HOME_DASHBOARD(location))
-      if (data.success && data.data.market_prices) {
-        setMarketPrices(data.data.market_prices)
+      setRefreshingMarket(true)
+      const data = await apiCall('/api/knowledge/market-prices')
+      if (data.success && data.data) {
+        setMarketPrices(data.data)
+        setDataLoaded(prev => ({ ...prev, market: true }))
       }
     } catch (error) {
       console.error('Error fetching market prices:', error)
+    } finally {
+      setRefreshingMarket(false)
     }
   }
 
-  // Initialize data
+  // Initialize data - load once on mount
   useEffect(() => {
     const initializeData = async () => {
       setLoading(true)
       await Promise.all([
         fetchWeatherForecast(),
-        fetchMarketPrices()
+        fetchMarketPrices(),
+        fetchCropCalendar(),
+        fetchFarmingTips()
       ])
-      setCropCalendar(mockCropCalendar)
       setLoading(false)
     }
 
@@ -242,14 +223,9 @@ const Knowledge: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('loadingKnowledge', { en: 'Loading knowledge base...', ml: 'വിജ്ഞാന ശേഖരം ലോഡ് ചെയ്യുന്നു...' })}
-          </p>
-        </div>
-      </div>
+      <LoadingSpinner 
+        message={t('loadingKnowledge', { en: 'Loading knowledge base...', ml: 'വിജ്ഞാന ശേഖരം ലോഡ് ചെയ്യുന്നു...' })}
+      />
     )
   }
 
@@ -300,7 +276,7 @@ const Knowledge: React.FC = () => {
           {/* 24-Hour Weather Forecast */}
           {filteredContent.showWeather && (
           <div id="weather-forecast" className="bg-gradient-to-br from-sky-50 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 rounded-2xl p-6 border-2 border-sky-200 dark:border-sky-800">
-            <div className="flex items-center mb-6">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center">
                   <CloudRain className="w-5 h-5 text-white" />
@@ -309,6 +285,14 @@ const Knowledge: React.FC = () => {
                   {t('weatherForecast', { en: '24-Hour Forecast', ml: '24 മണിക്കൂർ പ്രവചനം' })}
                 </h2>
               </div>
+              <button
+                onClick={fetchWeatherForecast}
+                disabled={refreshingWeather}
+                className="p-2 text-sky-600 dark:text-sky-400 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                aria-label="Refresh weather"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshingWeather ? 'animate-spin' : ''}`} />
+              </button>
             </div>
 
             {weatherForecast ? (
@@ -430,15 +414,26 @@ const Knowledge: React.FC = () => {
           {/* Market Prices */}
           {filteredContent.showMarketPrices && (
           <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border-2 border-green-200 dark:border-green-700">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
-                  {t('marketPrices', { en: 'Market Prices', ml: 'വിപണി വിലകൾ' })}
-                </h2>
+                <div>
+                  <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
+                    {t('marketPrices', { en: 'Market Prices', ml: 'വിപണി വിലകൾ' })}
+                  </h2>
+                  <p className="text-xs text-green-600 dark:text-green-400">Powered by AI</p>
+                </div>
               </div>
+              <button
+                onClick={fetchMarketPrices}
+                disabled={refreshingMarket}
+                className="p-2 text-green-600 dark:text-green-400 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                aria-label="Refresh market prices"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshingMarket ? 'animate-spin' : ''}`} />
+              </button>
             </div>
 
             {marketPrices && marketPrices.length > 0 ? (
@@ -484,15 +479,26 @@ const Knowledge: React.FC = () => {
           {/* Crop Calendar */}
           {filteredContent.showCropCalendar && (
           <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border-2 border-purple-200 dark:border-purple-700">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
-                  {t('cropCalendar', { en: 'Crop Calendar', ml: 'വിള കലണ്ടർ' })}
-                </h2>
+                <div>
+                  <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-text-primary">
+                    {t('cropCalendar', { en: 'Crop Calendar', ml: 'വിള കലണ്ടർ' })}
+                  </h2>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">Powered by AI</p>
+                </div>
               </div>
+              <button
+                onClick={fetchCropCalendar}
+                disabled={refreshingCalendar}
+                className="p-2 text-purple-600 dark:text-purple-400 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                aria-label="Refresh crop calendar"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshingCalendar ? 'animate-spin' : ''}`} />
+              </button>
             </div>
 
             {/* Month Selector */}
@@ -563,63 +569,55 @@ const Knowledge: React.FC = () => {
           {/* Smart Farming Tips */}
           {filteredContent.showFarmingTips && (
           <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-2xl p-6 border-2 border-green-200 dark:border-green-800">
-            <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-green-900 dark:text-green-100">
+                    {t('smartFarmingTips', { en: 'Smart Farming Tips', ml: 'സ്മാർട്ട് കൃഷി ടിപ്പുകൾ' })}
+                  </h2>
+                  <p className="text-xs text-green-600 dark:text-green-400">Powered by AI</p>
+                </div>
               </div>
-              <h2 className="text-lg font-semibold text-green-900 dark:text-green-100 ml-3">
-                {t('smartFarmingTips', { en: 'Smart Farming Tips', ml: 'സ്മാർട്ട് കൃഷി ടിപ്പുകൾ' })}
-              </h2>
+              <button
+                onClick={fetchFarmingTips}
+                disabled={refreshingTips}
+                className="p-2 text-green-600 dark:text-green-400 rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                aria-label="Refresh farming tips"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshingTips ? 'animate-spin' : ''}`} />
+              </button>
             </div>
             
             <div className="space-y-3">
-              <div className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                    <Droplets className="w-4 h-4 text-green-600 dark:text-green-400" />
+              {farmingTips && farmingTips.length > 0 ? (
+                farmingTips.map((tip, index) => (
+                  <div key={index} className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                        {index === 0 && <Droplets className="w-4 h-4 text-green-600 dark:text-green-400" />}
+                        {index === 1 && <Leaf className="w-4 h-4 text-green-600 dark:text-green-400" />}
+                        {index === 2 && <Sun className="w-4 h-4 text-green-600 dark:text-green-400" />}
+                        {index > 2 && <Lightbulb className="w-4 h-4 text-green-600 dark:text-green-400" />}
+                      </div>
+                      <div>
+                        <p className="text-sm text-green-800 dark:text-green-200">
+                          {tip}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-green-900 dark:text-green-100 mb-1">
-                      {t('waterManagement', { en: 'Water Management', ml: 'ജല പരിപാലനം' })}
-                    </h4>
-                    <p className="text-sm text-green-800 dark:text-green-200">
-                      {t('waterTip', { en: 'Use drip irrigation to save 30-50% water while improving crop yield.', ml: 'വിള വിളവ് മെച്ചപ്പെടുത്തുമ്പോൾ 30-50% വെള്ളം ലാഭിക്കാൻ ഡ്രിപ്പ് ജലസേചനം ഉപയോഗിക്കുക.' })}
-                    </p>
-                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="w-5 h-5 text-green-500 animate-spin mr-2" />
+                  <span className="text-green-600 dark:text-green-400">
+                    {t('loadingTips', { en: 'Loading farming tips...', ml: 'കൃഷി ടിപ്പുകൾ ലോഡ് ചെയ്യുന്നു...' })}
+                  </span>
                 </div>
-              </div>
-
-              <div className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                    <Leaf className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-green-900 dark:text-green-100 mb-1">
-                      {t('soilHealth', { en: 'Soil Health', ml: 'മണ്ണിന്റെ ആരോഗ്യം' })}
-                    </h4>
-                    <p className="text-sm text-green-800 dark:text-green-200">
-                      {t('soilTip', { en: 'Test soil pH regularly and add organic matter to improve soil structure.', ml: 'മണ്ണിന്റെ pH പതിവായി പരിശോധിക്കുകയും മണ്ണിന്റെ ഘടന മെച്ചപ്പെടുത്താൻ ജൈവവസ്തുക്കൾ ചേർക്കുകയും ചെയ്യുക.' })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/70 dark:bg-green-900/30 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                    <Sun className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-green-900 dark:text-green-100 mb-1">
-                      {t('seasonalPlanning', { en: 'Seasonal Planning', ml: 'സീസണൽ ആസൂത്രണം' })}
-                    </h4>
-                    <p className="text-sm text-green-800 dark:text-green-200">
-                      {t('seasonTip', { en: 'Plan crop rotation based on seasonal weather patterns for maximum yield.', ml: 'പരമാവധി വിളവിനായി സീസണൽ കാലാവസ്ഥാ പാറ്റേണുകളെ അടിസ്ഥാനമാക്കി വിള മാറ്റി കൃഷി ആസൂത്രണം ചെയ്യുക.' })}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
           )}

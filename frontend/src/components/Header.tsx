@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, Sun, Moon, Globe, Leaf } from 'lucide-react'
+import { Bell, Sun, Moon, Globe, Sprout } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useNotifications } from '../contexts/NotificationContext'
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme()
   const { toggleLanguage, t } = useLanguage()
+  const { unreadCount } = useNotifications()
   const navigate = useNavigate()
   const [isScrolled, setIsScrolled] = useState(false)
-
-  // Hardcoded unread count - TODO: Make this dynamic with notification context
-  const unreadCount = 3
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,9 +42,9 @@ const Header: React.FC = () => {
           {/* Logo Section */}
           <div className="flex items-center space-x-3">
             <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)' }}>
-              <Leaf className="w-6 h-6 text-white" strokeWidth={2.5} />
+              <Sprout className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-text-primary tracking-tight">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-text-primary tracking-wide" style={{ fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', letterSpacing: '-0.02em' }}>
               Krishi Sakhi
             </h1>
           </div>
@@ -90,7 +89,7 @@ const Header: React.FC = () => {
             {/* User Profile */}
             <Link 
               to="/profile"
-              className="flex items-center justify-center w-[38px] h-[38px] text-white rounded-[14px] border border-gray-300 dark:border-gray-700 transition-all active:scale-95"
+              className="flex items-center justify-center w-9 h-9 text-white rounded-[14px] border border-gray-300 dark:border-gray-700 transition-all active:scale-95"
               style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)' }}
             >
               <span className="font-semibold text-sm">R</span>

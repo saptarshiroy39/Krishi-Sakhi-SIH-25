@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Plus, CheckCircle, Clock, Edit2, Trash2, X, Save, RotateCcw, AlertTriangle, Search } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { API_ENDPOINTS, apiCall } from '../config/api'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 interface Activity {
   id: number;
@@ -323,12 +324,9 @@ const Activities: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading activities...</p>
-        </div>
-      </div>
+      <LoadingSpinner 
+        message={t('loadingActivities', { en: 'Loading activities...', ml: 'പ്രവർത്തനങ്ങൾ ലോഡ് ചെയ്യുന്നു...' })}
+      />
     )
   }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { 
   Wallet, ArrowRight, DollarSign, Shield, Leaf, CreditCard, Search, Filter, 
-  ExternalLink, CheckCircle, AlertCircle, Clock,
+  ExternalLink, CheckCircle, AlertCircle, Clock, RefreshCw,
   Star, ChevronRight, X,
   Zap, Award, Target
 } from 'lucide-react'
@@ -320,7 +320,7 @@ const Schemes: React.FC = () => {
         {loading && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <Clock className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
+              <RefreshCw className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 {t('loadingSchemes', { en: 'Loading schemes...', ml: 'പദ്ധതികൾ ലോഡ് ചെയ്യുന്നു...' })}
               </p>

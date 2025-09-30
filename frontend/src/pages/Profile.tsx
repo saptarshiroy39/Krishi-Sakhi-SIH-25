@@ -3,8 +3,9 @@ import {
   User, Phone, MapPin, Edit2, Save,
   Wheat, Trees, Heart, Droplets, Mountain, 
   ChevronDown, Thermometer, Sprout, Bug, Layers, Waves,
-  Mail, Trash2, X, Plus, Search, RefreshCw, Info, LogOut
+  Mail, Trash2, X, Plus, Search, Info, LogOut
 } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner'
 import { useLanguage } from '../contexts/LanguageContext'
 import { API_ENDPOINTS, apiCall } from '../config/api'
 
@@ -551,14 +552,9 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-primary-500 animate-spin mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('loadingProfile', { en: 'Loading profile...', ml: 'പ്രൊഫൈൽ ലോഡ് ചെയ്യുന്നു...' })}
-          </p>
-        </div>
-      </div>
+      <LoadingSpinner 
+        message={t('loadingProfile', { en: 'Loading profile...', ml: 'പ്രൊഫൈൽ ലോഡ് ചെയ്യുന്നു...' })}
+      />
     )
   }
 

@@ -8,8 +8,9 @@ import google.generativeai as genai
 import requests
 from flask import Blueprint, jsonify, request
 from groq import Groq
-from models import db
 from sqlalchemy import text
+
+from models import db
 
 home_bp = Blueprint("home", __name__)
 
@@ -142,31 +143,39 @@ def generate_farming_advisory(weather_data, location="Kerala"):
             wind_speed = current["wind"]["speed"]
 
             prompt = f"""
-            As an expert agricultural advisor for farmers in {location}, India, provide a brief daily farming advisory based on current weather conditions:
+            As an expert agricultural advisor for farmers in {location}, India, provide a brief daily farming advisory based on current weather conditions.
 
             Current Weather: {temp}°C, {humidity}% humidity, {weather_desc}, wind {wind_speed} m/s
 
-            Provide exactly 5 short lines of practical advice in plain text format:
-            1. One sentence about today's weather impact on farming
-            2. One key farming activity to do today
-            3. One irrigation or water management tip
-            4. One pest/disease precaution if relevant
-            5. One general farming tip for current conditions
+            Provide EXACTLY 3-4 concise, practical farming tips. Each tip should be:
+            - One clear sentence (15-20 words maximum)
+            - Directly related to current weather conditions
+            - Actionable and practical for farmers
+            - Written in simple, direct language
 
-            Keep each line to maximum 15-20 words. Write in simple, direct language without any symbols or formatting.
+            Format: Just provide 3-4 plain text lines, each on a new line. NO bullet points, NO numbers, NO markdown formatting.
+
+            Example format:
+            Today's moderate temperature is ideal for transplanting rice seedlings
+            Apply organic fertilizers in the morning when soil moisture is optimal
+            Monitor crops for fungal diseases due to high humidity levels
             """
         else:
             prompt = f"""
             As an expert agricultural advisor for farmers in {location}, India, provide a brief daily farming advisory for today's season.
 
-            Provide exactly 5 short lines of practical advice in plain text format:
-            1. One sentence about current seasonal farming priority
-            2. One key farming activity for this time of year
-            3. One irrigation or water management tip
-            4. One seasonal pest/disease precaution
-            5. One general farming tip for this season
+            Provide EXACTLY 3-4 concise, practical farming tips. Each tip should be:
+            - One clear sentence (15-20 words maximum)
+            - Relevant to current season and farming practices
+            - Actionable and practical for farmers
+            - Written in simple, direct language
 
-            Keep each line to maximum 15-20 words. Write in simple, direct language without any symbols or formatting.
+            Format: Just provide 3-4 plain text lines, each on a new line. NO bullet points, NO numbers, NO markdown formatting.
+
+            Example format:
+            Focus on land preparation for the upcoming monsoon season
+            Apply compost and organic matter to improve soil fertility
+            Check irrigation systems and repair any damages before rains
             """
 
         response = model.generate_content(prompt)
